@@ -1,0 +1,925 @@
+{
+  "@@locale": "en",
+  "appName": "WAVE",
+  "navReels": "Reels",
+  "navMarketplace": "Market",
+  "navChat": "Chat",
+  "navProfile": "Profile",
+  "publish": "Publish",
+  "buyNow": "Buy now",
+  "makeAnOffer": "Make an offer",
+  "offersComingSoon": "Offers are coming soon. Message the seller for now.",
+  "addToCart": "Add to cart",
+  "addedToCart": "Added to cart",
+  "viewCart": "View cart",
+  "cart": "Cart",
+  "checkout": "Checkout",
+  "cartEmpty": "Your cart is empty",
+  "cartEmptyBody": "Find something in the market, or watch a Reel and buy straight from it.",
+  "browseTheMarket": "Browse the market",
+  "outOfStock": "Out of stock",
+  "inStock": "In stock",
+  "remove": "Remove",
+  "total": "Total",
+  "totalPaid": "Total paid",
+  "orderSummary": "Order summary",
+  "deliverTo": "Deliver to",
+  "payWith": "Pay with",
+  "change": "Change",
+  "add": "Add",
+  "lowStockCount": "Only {count} left",
+  "@lowStockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleBought": "{count, plural, =0{Be the first to buy this} =1{1 person bought this} other{{count} people bought this}}",
+  "@peopleBought": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signIn": "Sign in",
+  "continueWithGoogle": "Continue with Google",
+  "continueWithApple": "Continue with Apple",
+  "continueWithPhone": "Continue with phone",
+  "continueAsGuest": "Browse without an account",
+  "guestExplainer": "You can look around freely. An account is needed to buy, post or message.",
+  "agreeToTerms": "I agree to the ",
+  "andConnector": " and ",
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "ageConfirmation": "I am 13 or older",
+  "phoneNumber": "Phone number",
+  "sendCode": "Send code",
+  "sendNewCode": "Send a new code",
+  "verifyAndContinue": "Verify and continue",
+  "sixDigitCode": "6-digit code",
+  "oneQuickStep": "One quick step",
+  "phoneGateTitle": "We need a phone number before your first order",
+  "phoneGateBody": "It is how the courier reaches you, and it keeps fraudulent orders off your account. We only ask once — after this, buying takes one tap.",
+  "orderConfirmed": "Confirmed",
+  "orderOnTheWay": "On the way",
+  "orderDelivered": "Delivered",
+  "orderCancelled": "Order cancelled",
+  "yourOrders": "Your orders",
+  "noOrdersYet": "No orders yet",
+  "noOrdersBody": "What you buy shows up here, with where it has got to.",
+  "cancelOrder": "Cancel order",
+  "keepIt": "Keep it",
+  "receipt": "Receipt",
+  "rateThisOrder": "Rate this order",
+  "stageConfirmedBody": "The seller has your order and is getting it ready. You can still cancel until it leaves.",
+  "stageOnTheWayBody": "On its way to you. The courier will call the number on your account.",
+  "stageDeliveredBody": "Delivered. Enjoy it.",
+  "trustBronze": "Bronze Trusted",
+  "trustSilver": "Silver Trusted",
+  "trustGold": "Gold Trusted",
+  "trustPlatinum": "Top Rated",
+  "trustVerifiedSeller": "Verified seller",
+  "trustNewSeller": "New seller",
+  "noTrackRecordBody": "This seller has no completed orders yet, so there are no ratings to go on. Cash on delivery is the safest way to buy from someone new.",
+  "comments": "Comments",
+  "commentsCount": "{count} comments",
+  "@commentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addAComment": "Add a comment",
+  "noCommentsYet": "No comments yet",
+  "noCommentsBody": "Ask about size, condition or delivery — the seller can answer here.",
+  "seller": "Seller",
+  "follow": "Follow",
+  "following": "Following",
+  "message": "Message",
+  "report": "Report",
+  "reportSent": "Report sent",
+  "share": "Share",
+  "save": "Save",
+  "like": "Like",
+  "reviews": "Reviews",
+  "noReviewsYet": "No reviews yet",
+  "verifiedPurchase": "Verified purchase",
+  "reviewVerifiedOnly": "Only buyers who received this item can review it, so reviews here always come from a real order.",
+  "editWindowNote": "You can edit this for 48 hours, then it is locked.",
+  "submitRating": "Submit rating",
+  "ratingBad": "Bad",
+  "ratingNotGreat": "Not great",
+  "ratingFine": "Fine",
+  "ratingGood": "Good",
+  "ratingExcellent": "Excellent",
+  "tapAStar": "Tap a star",
+  "newReel": "New Reel",
+  "chooseAVideo": "Choose a video",
+  "caption": "Caption",
+  "linkAProduct": "Link a product",
+  "linkAProductBody": "Adds a Buy Now button to this Reel",
+  "listAProduct": "List a product",
+  "whatIsIt": "What is it?",
+  "description": "Description",
+  "price": "Price",
+  "howMany": "How many",
+  "cover": "Cover",
+  "listingIsLive": "Your listing is live",
+  "reelIsLive": "Your Reel is live",
+  "notifications": "Notifications",
+  "notifOrders": "Order updates",
+  "notifOrdersBody": "Confirmed, on the way, delivered",
+  "notifChat": "Messages",
+  "notifChatBody": "When a buyer or seller replies",
+  "notifSocial": "Likes, comments and follows",
+  "notifSocialBody": "Activity on your Reels and profile",
+  "notifMarketing": "Offers and announcements",
+  "notifMarketingBody": "Occasional news about WAVE",
+  "nothingNew": "Nothing new",
+  "retry": "Try again",
+  "getStarted": "Get started",
+  "errorNoConnectionBody": "Check your connection and try again.",
+  "errorDeadLink": "This link went nowhere",
+  "errorDeadLinkBody": "The page you followed doesn't exist or has been removed.",
+  "searchProductsAndReels": "Search products and Reels",
+  "cancel": "Cancel",
+  "done": "Done",
+  "next": "Next",
+  "skip": "Skip",
+  "updateRequiredTitle": "Update WAVE to keep going",
+  "updateRequiredBody": "This version is no longer supported. The update takes a moment, and your cart and orders are safe.",
+  "updateNow": "Update now",
+  "acceptAndContinue": "Accept and continue",
+  "profile": "Profile",
+  "settings": "Settings",
+  "browsingAsGuest": "You are browsing as a guest",
+  "guestUpgradeBody": "Create an account to buy, sell, save favourites and message sellers. Anything in your cart comes with you.",
+  "createAnAccount": "Create an account",
+  "favourites": "Favourites",
+  "savedReels": "Saved Reels",
+  "ordersToFulfil": "Orders to fulfil",
+  "howYouAreDoing": "How you are doing",
+  "termsAndPolicies": "Terms and policies",
+  "downloadYourData": "Download your data",
+  "preparingYourData": "Preparing your data — this may take a moment",
+  "deleteYourAccount": "Delete your account",
+  "deleteYourAccountQ": "Delete your account?",
+  "deleteAccountBody": "Deleted for good: your profile, Reels, listings, saved items, addresses and payment methods.\n\nKept without your name: completed orders, and the ratings and reviews you left. Sellers need their transaction records, and removing your ratings would quietly change their score for the next buyer.\n\nIf something is already on its way to you, its delivery details stay until it arrives — the courier is holding your parcel. They are erased within a day of delivery.\n\nThis cannot be undone.",
+  "keepMyAccount": "Keep my account",
+  "delete": "Delete",
+  "items": "Items",
+  "orderNumber": "Order #{id}",
+  "@orderNumber": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "orderedOn": "Ordered {date}",
+  "@orderedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNotFound": "We can't find that order",
+  "orderNotFoundBody": "It may have been removed, or the link may be wrong.",
+  "cancelThisOrder": "Cancel this order",
+  "cancelThisOrderQ": "Cancel this order?",
+  "cancelOrderBuyerBody": "The seller is told straight away and anything paid is refunded. You cannot undo this.",
+  "howDidItGo": "How did it go?",
+  "ratingHelpsNextBuyer": "Your rating is what gives this seller their badge — and what tells the next buyer whether to trust them.",
+  "ratingSubmitted": "Thanks — your rating is in",
+  "descriptionHint": "Size, condition, materials — whatever a buyer would ask before deciding",
+  "coverPhotoNote": "The first photo is what buyers see in the grid. Up to {max}.",
+  "@coverPhotoNote": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "buyersWillSee": "Buyers will see {price}",
+  "@buyersWillSee": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadingPhotos": "Uploading photos…",
+  "makeAReel": "Make a Reel",
+  "aboutThisItem": "About this item",
+  "shareThisItem": "Share this item",
+  "reportThisListing": "Report this listing",
+  "productNotFound": "We can't find that item",
+  "productNotFoundBody": "It may have sold out or been removed by the seller.",
+  "backToTheMarket": "Back to the market",
+  "otherActions": "Other actions",
+  "buyerCanStillCancel": "The buyer can still cancel until you hand this to a courier.",
+  "cancelOrderSellerBody": "The buyer is refunded and told straight away. Cancelling orders you have already accepted affects your trust tier, so only do this if you genuinely cannot fulfil it.",
+  "nothingWaitingOnYou": "Nothing waiting on you",
+  "nothingWaitingBody": "New orders show up here the moment someone buys.",
+  "nothingInTransit": "Nothing in transit",
+  "nothingInTransitBody": "Orders you have handed to a courier appear here.",
+  "noCompletedOrders": "No completed orders yet",
+  "noCompletedOrdersBody": "Delivered and cancelled orders are kept here.",
+  "filterToDo": "To do",
+  "filterOnTheWay": "On the way",
+  "filterCompleted": "Completed",
+  "soldOut": "Sold out",
+  "deliveryArrangedNote": "Delivery is arranged with the seller after you order.",
+  "cartMultiSellerWarning": "Your cart has items from more than one seller. Order them separately for now.",
+  "cartStockWarning": "Some items sold out or dropped below the quantity you chose. Adjust them to continue.",
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "noAddressYet": "No address yet",
+  "savedAddress": "Saved address",
+  "savedPaymentMethod": "Saved payment method",
+  "codAvailableNote": "Cash on delivery is available in your area",
+  "placeOrderWithTotal": "Place order · {total}",
+  "@placeOrderWithTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "signInToOrder": "Sign in to place this order",
+  "signInToOrderBody": "Guests can browse and fill a cart, but an order needs an account.",
+  "verifyYourPhone": "Verify your phone number",
+  "verifyNow": "Verify now",
+  "addDeliveryAddress": "Add a delivery address",
+  "addAddressBody": "The seller needs somewhere to send this.",
+  "addAddress": "Add address",
+  "chooseHowToPay": "Choose how to pay",
+  "chooseHowToPayBody": "Cash on delivery is available in most areas.",
+  "choose": "Choose",
+  "newAddress": "New address",
+  "addANewAddress": "Add a new address",
+  "whoIsReceiving": "Who is receiving it",
+  "phoneForCourier": "Phone for the courier",
+  "city": "City",
+  "addressLine": "Neighbourhood, street, building",
+  "landmarkOptional": "Nearest landmark (optional)",
+  "landmarkHint": "Opposite the blue mosque, above the pharmacy…",
+  "landmarkNote": "Couriers here usually find an address by landmark and a phone call, so this helps more than it looks like it should.",
+  "saveAddress": "Save address",
+  "chooseADifferentVideo": "Choose a different video",
+  "upToNSeconds": "Up to {seconds} seconds",
+  "@upToNSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "durationOfMax": "{actual}s of {max}s",
+  "@durationOfMax": {
+    "placeholders": {
+      "actual": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "videoTooLong": "That video is {actual}s. Trim it to {max} seconds or less and pick it again.",
+  "@videoTooLong": {
+    "placeholders": {
+      "actual": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "captionHint": "Say what it is, and why someone would want it",
+  "removeTheLink": "Remove the link",
+  "linkedProductNote": "Buyers can purchase this straight from the Reel",
+  "statsNotLoaded": "Your numbers didn't load",
+  "lastNDays": "Last {days} days",
+  "@lastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "earned": "earned",
+  "orders": "orders",
+  "rating": "rating",
+  "wherePeopleDropOff": "Where people drop off",
+  "funnelExplainer": "Each step shows how many carried on to the next.",
+  "funnelLowSample": "These percentages are unreliable below about 100 views — treat them as a hint, not a verdict.",
+  "funnelWatched": "Watched a Reel",
+  "funnelTapped": "Tapped Buy Now",
+  "funnelCompleted": "Completed the order",
+  "lowTapThroughNote": "Few watchers tap Buy Now. The Reel may not be showing the product clearly, or the price may not be visible early enough.",
+  "lowCompletionNote": "Most people who tap Buy Now do not finish. That is usually price, stock running out, or a first-time buyer meeting the phone verification step.",
+  "yourReels": "Your Reels",
+  "nothingPublishedYet": "Nothing published yet.",
+  "ordersWaitingOne": "1 order is waiting on you",
+  "ordersWaitingMany": "{count} orders are waiting on you",
+  "@ordersWaitingMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "open": "Open",
+  "viewsAndSold": "{views} views · {sold} sold",
+  "@viewsAndSold": {
+    "placeholders": {
+      "views": {
+        "type": "int"
+      },
+      "sold": {
+        "type": "int"
+      }
+    }
+  },
+  "wastedAudienceNote": "{views} people watched this and had nothing to buy. Link a product to it.",
+  "@wastedAudienceNote": {
+    "placeholders": {
+      "views": {
+        "type": "int"
+      }
+    }
+  },
+  "reportThis": "Report this",
+  "whatIsWrongWithIt": "What is wrong with it?",
+  "alsoBlockAccount": "Also block this account",
+  "blockExplainer": "You will stop seeing their posts and messages",
+  "sendReport": "Send report",
+  "reportSentBody": "A moderator will look at this. We do not share what happens next, and the person reported is not told who reported them.",
+  "reasonSpam": "Spam or scam",
+  "reasonCounterfeit": "Counterfeit or misrepresented item",
+  "reasonProhibited": "Prohibited item",
+  "reasonHarassment": "Harassment or hate",
+  "reasonSexual": "Sexual content",
+  "reasonViolence": "Violence or dangerous acts",
+  "reasonIntellectualProperty": "Copyright or trademark",
+  "reasonOther": "Something else",
+  "sellerNotFound": "We can't find that seller",
+  "sellerNotFoundBody": "The account may have been removed.",
+  "reportOrBlock": "Report or block",
+  "sellingSince": "Selling since {date}",
+  "@sellingSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nothingListedRightNow": "Nothing listed right now.",
+  "listings": "Listings",
+  "listingsCount": "{count} listings",
+  "@listingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "followers": "followers",
+  "ratingsCount": "{count} ratings",
+  "@ratingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delivered": "delivered",
+  "goToReels": "Go to Reels",
+  "reelsNotLoaded": "Reels didn't load",
+  "noReelsYet": "No Reels yet",
+  "noReelsBody": "Be the first to post one.",
+  "nothingSavedYet": "Nothing saved yet",
+  "savedReelsBody": "Tap the bookmark on a Reel to keep it here.",
+  "watchSomeReels": "Watch some Reels",
+  "favouritesBody": "Tap the heart on anything you want to come back to.",
+  "appTagline": "Watch, and buy what you see.",
+  "searchProducts": "Search products",
+  "clearSearch": "Clear search",
+  "marketEmpty": "The market is empty",
+  "marketEmptyBody": "Nothing is listed yet. Be the first to sell something.",
+  "productsNotLoaded": "Products didn't load",
+  "nothingMatched": "Nothing matched \"{query}\"",
+  "@nothingMatched": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchPrefixNoteProducts": "Search matches the start of a product name. Try a shorter or different word.",
+  "searchPrefixNoteAll": "Search matches the start of a name or caption, so try the first word rather than a word from the middle.",
+  "searchHintEmpty": "Search across everything for sale and every Reel.",
+  "searchHintShort": "Keep typing — searches start at two letters.",
+  "products": "Products",
+  "reels": "Reels",
+  "shop": "Shop",
+  "ordersNotLoaded": "Your orders didn't load",
+  "receiptTitle": "Receipt",
+  "receiptDocTitle": "WAVE receipt {id}",
+  "@receiptDocTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptSoldBy": "Sold by",
+  "receiptBuyer": "Buyer",
+  "receiptDeliveredTo": "Delivered to",
+  "receiptStatus": "Status",
+  "receiptItem": "Item",
+  "receiptQty": "Qty",
+  "receiptUnit": "Unit",
+  "receiptDisclaimer": "This is a record of a purchase made through WAVE. WAVE is a marketplace; the sale is between the buyer and the seller named above. It is not a tax invoice unless the seller has issued one separately.",
+  "yourWaveData": "Your WAVE data",
+  "sellFromThisReel": "Sell from this Reel",
+  "sellFromThisReelBody": "Pick one of your listings. Buyers get a Buy Now button without leaving the video.",
+  "nothingListedYet": "You have nothing listed yet.",
+  "listAProductFirst": "List a product first",
+  "uploadAReel": "Upload a Reel",
+  "uploadAReelBody": "Up to 60 seconds. Link a product to sell from it.",
+  "listAProductBody": "Add photos, price and stock.",
+  "versionUpdated": "Version {version} · updated {date}",
+  "@versionUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "copied": "Copied",
+  "copy": "Copy",
+  "documentNotLoaded": "That document didn't load",
+  "beforeYouStart": "Before you start",
+  "termsChanged": "Our terms have changed",
+  "documentChanged": "{title} has changed",
+  "@documentChanged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptToUse": "Please read and accept these to use WAVE.",
+  "readWhatChanged": "Please read what changed before continuing.",
+  "addANote": "Add a note (optional)",
+  "reviewsCount": "{count} reviews",
+  "@reviewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noMessagesYet": "No messages yet",
+  "noMessagesBody": "When you message a seller about an item, the conversation shows up here.",
+  "aboutAListing": "About a listing",
+  "view": "View",
+  "chatEmptyPrompt": "Ask about size, condition, delivery — whatever you need to know before you buy.",
+  "send": "Send",
+  "notificationSettings": "Notification settings",
+  "notificationsNotLoaded": "Notifications didn't load",
+  "nothingNewBody": "Order updates, replies and activity on your posts show up here.",
+  "notifOrdersOffWarning": "Turning off order updates means we will not tell you when something you bought is on its way.",
+  "howDoYouWantToPay": "How do you want to pay?",
+  "addPaymentMethod": "Add {method}",
+  "@addPaymentMethod": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "cardDetailsNote": "Card details are held by the payment provider, never by WAVE.",
+  "railCashOnDelivery": "Cash on delivery",
+  "railCashOnDeliveryBody": "Pay the courier when it arrives",
+  "railMobileWallet": "Mobile wallet",
+  "railCard": "Card",
+  "railBankCard": "Bank card",
+  "railBankCardBody": "Visa or Mastercard",
+  "lowStockShort": "Only a few left",
+  "phoneGateShortNote": "We ask once. Your number is used for delivery updates and to protect your account — after this, buying is one tap.",
+  "promoApplied": "Code applied. The discount is confirmed at checkout.",
+  "stockLimitReached": "That is all the stock available",
+  "postComment": "Post comment",
+  "onboardingTitle1": "Watch. Tap. Own it.",
+  "onboardingBody1": "Every Reel can be a shop. If you like what you see, buy it without leaving the video.",
+  "onboardingTitle2": "Know who you are buying from",
+  "onboardingBody2": "Sellers earn their badge from real, delivered orders — not from what they say about themselves.",
+  "onboardingTitle3": "Sell what you make",
+  "onboardingBody3": "Post a Reel, link a product, get paid. When something sells we will let you know straight away — you can turn that off any time.",
+  "startBrowsing": "Start browsing",
+  "stepOfTotal": "Step {current} of {total}",
+  "@stepOfTotal": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "orderStatusSemantic": "Order status: {status}, step {step} of 3",
+  "@orderStatusSemantic": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "signOut": "Sign out",
+  "signOutQ": "Sign out?",
+  "signOutBody": "You will stop getting notifications on this device, and nobody using it after you will see your orders.",
+  "promoCode": "Promo code",
+  "promoCodeHint": "Have a code?",
+  "apply": "Apply",
+  "discount": "Discount",
+  "promoInvalid": "That code is not valid",
+  "promoExpired": "That code has expired",
+  "promoUsed": "You have already used that code",
+  "mediaAccessRationale": "WAVE needs access to your videos so you can pick one to post. We only see the video you choose.",
+  "stageCancelledBody": "This order was cancelled. Any payment taken is refunded to the original method.",
+  "shareThisReel": "Share this Reel",
+  "reportThisReel": "Report this Reel",
+  "accountSuspended": "Your account is suspended",
+  "accountSuspendedBody": "You can still see your orders and read our Content Policy, but you cannot post, sell, comment or message while the suspension is in place.",
+  "readContentPolicy": "Read the Content Policy",
+  "recoverAccount": "Recover your account",
+  "recoverByPhone": "Using your phone number",
+  "recoverByPhoneBody": "We will send a code to the number on the account. Entering it signs you back in.",
+  "recoverByEmail": "Using your email",
+  "recoverByEmailBody": "If you signed up with Google or Apple and no longer have that phone, use the email on the account instead.",
+  "emailAddress": "Email address",
+  "sendRecoveryEmail": "Send a recovery email",
+  "recoveryEmailSent": "If that address has an account, a recovery email is on its way.",
+  "forgotAccess": "Lost access to your account?",
+  "offlineBannerBody": "You are offline. What you do now is saved and will sync when you're back.",
+  "stagePendingPaymentBody": "Waiting for your payment to go through. The seller sees this order once it does — usually within a minute.",
+  "stagePaymentFailedBody": "Your payment did not go through, so the seller has not been sent this order. Nothing has been charged.",
+  "paymentPending": "Waiting for payment",
+  "promoBelowMinimum": "That code needs a larger order",
+  "promoTooManyAttempts": "Too many code attempts. Try again later.",
+  "buyNowWithPrice": "Buy now · {price}",
+  "setDeliveryLocation": "Set delivery location",
+  "dragMapToSetPin": "Move the map to put the pin on your door.",
+  "useMyLocation": "Use my location",
+  "confirmLocation": "Confirm location",
+  "confirmAndBuy": "Confirm and buy · {price}",
+  "deliveryNote": "Landmark or directions",
+  "deliveryNoteHint": "Blue gate, second floor, opposite the pharmacy…",
+  "deliveryNoteWhy": "Couriers here usually find a door by landmark and a phone call, so this helps more than the pin does.",
+  "locationPermissionDenied": "Location is off, so place the pin by hand.",
+  "locationUnavailable": "Couldn't find you. Place the pin by hand.",
+  "locationTooVague": "That fix is very rough. Move the pin to your door so the courier is not guessing.",
+  "deliveryLocation": "Delivery location",
+  "openInMaps": "Open in maps",
+  "noLocationSet": "No map pin on this order",
+  "approximateFix": "Approximate — phone before setting off",
+  "@buyNowWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "@confirmAndBuy": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "setDeliveryLocationWithPrice": "Set delivery location · {price}",
+  "@setDeliveryLocationWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "statusPendingPayment": "Waiting for payment",
+  "statusPaymentProcessing": "Payment processing",
+  "statusPaymentFailed": "Payment failed",
+  "statusNeedsPacking": "New — needs packing",
+  "statusPacked": "Packed",
+  "statusWithCourier": "With the courier",
+  "statusOutForDelivery": "Out for delivery",
+  "statusDelivered": "Delivered",
+  "statusCancelled": "Cancelled",
+  "statusRefunded": "Refunded",
+  "sortNewest": "Newest",
+  "sortPriceLowToHigh": "Price: low to high",
+  "sortPriceHighToLow": "Price: high to low",
+  "sortTopRated": "Top rated",
+  "uploadValidating": "Checking your video",
+  "uploadCompressing": "Making it smaller",
+  "uploadPreparing": "Getting ready",
+  "uploadUploading": "Uploading",
+  "uploadProcessing": "Processing — you can leave this screen",
+  "uploadPublishing": "Publishing",
+  "uploadDone": "Published",
+  "ratePromptProduct": "How is {name}?",
+  "@ratePromptProduct": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ratePromptSeller": "How was {name} to buy from?",
+  "@ratePromptSeller": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actionMarkPacked": "Mark as packed",
+  "actionHandedToCourier": "Handed to courier",
+  "actionOutForDelivery": "Out for delivery",
+  "actionMarkDelivered": "Mark as delivered",
+  "actionCancelOrder": "Cancel order",
+  "errorGeneric": "Something went wrong. Try again.",
+  "errorNotSignedIn": "Sign in to continue",
+  "errorSignInCancelled": "Sign-in cancelled",
+  "errorSignInFailed": "Could not sign you in. Try again.",
+  "errorGuestSessionFailed": "Could not start a guest session",
+  "errorCodeSendFailed": "Could not send the code. Try again.",
+  "errorCodeSendThrottled": "Too many codes requested. Try again in {minutes} min.",
+  "@errorCodeSendThrottled": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "errorCodeIncorrect": "That code is not right. Check and retry.",
+  "errorCodeExpired": "That code expired. Request a new one.",
+  "errorRequestCodeFirst": "Request a code first",
+  "errorVerificationFailed": "Could not verify your number. Try again.",
+  "errorPhoneOnAnotherAccount": "This number is already on another account.",
+  "errorPhoneLinkFailed": "That number did not attach to your account. Try again.",
+  "errorRecoveryEmailFailed": "Could not send the email",
+  "errorPromoCheckFailed": "Could not check that code",
+  "errorSignInToMessage": "Sign in to send messages",
+  "errorMessageTooLong": "Message is too long",
+  "errorMessagingTooFast": "You are sending messages too quickly",
+  "errorMessageFailed": "Message failed to send",
+  "errorVerifyPhoneToOrder": "Verify your phone number to place this order.",
+  "errorCheckoutSetupIncomplete": "Finish setting up checkout first",
+  "errorDeliveryLocationRequired": "Set a delivery location first",
+  "errorTooManyAttempts": "Too many attempts. Wait a moment and retry.",
+  "errorOrderFailed": "Your order didn't go through. Nothing was charged.",
+  "errorSoldOutDuringCheckout": "Something sold out while you were checking out. Check your cart.",
+  "errorSignInToComment": "Sign in to comment",
+  "errorGuestCannotComment": "Create an account to join the conversation",
+  "errorCommentTooLong": "That comment is too long",
+  "errorCommentsBuyersOnly": "Comments on this Reel are limited to people who bought the item.",
+  "errorCommentingTooFast": "You are commenting very quickly. Wait {seconds}s.",
+  "@errorCommentingTooFast": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "errorCommentNotAllowed": "You cannot comment on this Reel",
+  "errorCommentDeleteOwnOnly": "You can only delete your own comments",
+  "errorCommentPostFailed": "Could not post your comment",
+  "errorDocumentNotPublished": "This document has not been published yet",
+  "errorDocumentLoadFailed": "Could not load the document",
+  "errorAcceptanceFailed": "Could not record your acceptance",
+  "errorDataExportFailed": "Could not prepare your data",
+  "errorProductsLoadFailed": "Could not load products",
+  "errorSearchFailed": "Search failed. Try again.",
+  "errorSignInToSaveProducts": "Sign in to save products",
+  "errorSignInToReport": "Sign in to report",
+  "errorReportThrottled": "You have reported something very recently. Try again in {seconds}s.",
+  "@errorReportThrottled": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "errorReportFailed": "Could not send the report",
+  "errorChooseAnOutcome": "Choose an outcome",
+  "errorNotAModerator": "You are not a moderator",
+  "errorReportAlreadyReviewed": "Another moderator reviewed this first. Refresh the queue.",
+  "errorDecisionFailed": "Could not record the decision",
+  "errorNotYourOrder": "This is not your order",
+  "errorOrderAlreadyShipped": "This order has already left for delivery and can no longer be cancelled. Message the seller to sort it out.",
+  "errorCancelFailed": "Could not cancel the order",
+  "errorSignInToFollow": "Sign in to follow",
+  "errorCannotFollowYourself": "You cannot follow yourself",
+  "errorFollowThrottled": "One moment — try again in {seconds}s",
+  "@errorFollowThrottled": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "errorSignInToSell": "Sign in to sell",
+  "errorGuestCannotSell": "Guests cannot list products",
+  "errorTitleRequired": "Give the item a name",
+  "errorPriceRequired": "Set a price above zero",
+  "errorPhotoRequired": "Add at least one photo",
+  "errorTooManyPhotos": "Up to {max} photos",
+  "@errorTooManyPhotos": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPhotoTooLarge": "One of those photos is too large. Keep each under {megabytes}MB.",
+  "@errorPhotoTooLarge": {
+    "placeholders": {
+      "megabytes": {
+        "type": "int"
+      }
+    }
+  },
+  "errorPublishFailed": "Could not publish the listing",
+  "errorUploadNeedsConnection": "You need a connection to publish. Your video is saved — try again when you are back online.",
+  "errorVideoStillProcessing": "Your video uploaded but is taking a while to process. It will appear on your profile once it is ready.",
+  "errorPublishThrottled": "You have posted a lot recently. Try again in a little while.",
+  "errorPublishNotAllowed": "Your account cannot publish right now.",
+  "errorUploadFailed": "Upload failed. Try again.",
+  "errorReelNotFound": "We can't find that Reel",
+  "errorSignInToLikeReels": "Sign in to like Reels",
+  "errorSignInToSaveReels": "Sign in to save Reels",
+  "errorSignInToReview": "Sign in to review",
+  "errorSignInToRate": "Sign in to rate",
+  "errorRatingOutOfRange": "Pick a rating from 1 to 5",
+  "errorEditWindowClosed": "The 48-hour window to edit this review has closed.",
+  "errorRateAfterDelivery": "You can rate this once the order has been delivered.",
+  "errorItemNotInOrder": "That item was not part of this order.",
+  "errorRateBuyersOnly": "Only buyers who received this order can rate it.",
+  "errorAlreadyRated": "You have already rated this order.",
+  "errorReviewSubmitFailed": "Could not submit your rating",
+  "errorInvalidStatusTransition": "That order cannot move to this status. Pull to refresh.",
+  "errorBuyerCancelledOrder": "The buyer cancelled this order while you were updating it.",
+  "errorOrderMovedOn": "This order already moved on. Pull to refresh.",
+  "errorOrderUpdateFailed": "Could not update the order",
+  "legalSellerAgreement": "Seller Agreement",
+  "legalContentPolicy": "Community Content Policy",
+  "railNotConnectedYet": "{method} is not connected yet. Cash on delivery works today.",
+  "@railNotConnectedYet": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewEdited": "edited",
+  "starCount": "{count, plural, =1{1 star} other{{count} stars}}",
+  "@starCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingOutOfFive": "{rating} out of 5 stars",
+  "@ratingOutOfFive": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "unlike": "Unlike",
+  "you": "You",
+  "someone": "Someone",
+  "thisSeller": "this seller",
+  "untitledReel": "Untitled",
+  "orderFallbackTitle": "Order",
+  "andNMore": "{count, plural, =1{ and 1 more} other{ and {count} more}}",
+  "@andNMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionWithCount": "{title} ({count})",
+  "@sectionWithCount": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quantityTimesTitle": "{quantity} × {title}",
+  "@quantityTimesTitle": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "timeJustNow": "now",
+  "timeMinutesShort": "{minutes}m",
+  "@timeMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursShort": "{hours}h",
+  "@timeHoursShort": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysShort": "{days}d",
+  "@timeDaysShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "timeWeeksShort": "{weeks}w",
+  "@timeWeeksShort": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "productCardSemantic": "{title}, {price}",
+  "@productCardSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "statSemantic": "{value} {label}",
+  "@statSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "updateSearchStoreManually": "Search for WAVE in your app store to update.",
+  "systemDefault": "System default"
+}

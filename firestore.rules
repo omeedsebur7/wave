@@ -1,0 +1,583 @@
+rules_version = '2';
+
+// WAVE Firestore Security Rules.
+//
+// Guiding principle: the client is never trusted with anything that has money,
+// identity, or trust attached to it. Prices, order totals, phone_verified,
+// trust tiers and counter aggregates are all written exclusively by Cloud
+// Functions using the Admin SDK, which bypasses these rules. If a field appears
+// in an `unchanged()` list below, that is deliberate.
+//
+// Two notes on absent things, because both cost a debugging session.
+//
+// 1. Absent TOKEN CLAIMS — see the token claim helpers below. Reading a claim
+//    that is not on the token is an evaluation error, not a null.
+//
+// 2. Absent DOCUMENTS:
+//
+// `get()` on a missing document returns null, and `null.data.field` is an
+// EVALUATION ERROR, not `false`. The emulator reports those differently —
+// "evaluation error at L317:24" versus "false for 'update' @ L492" — and an
+// evaluation error means a rule could not be decided rather than that it
+// decided no. Both deny the write, so the client sees an identical
+// `permission-denied` either way, which makes a missing document
+// indistinguishable from a failed condition. Every get() below is therefore
+// guarded by exists() first. It is not defensive padding; it is the difference
+// between a log line that names the failing condition and one that does not.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ──────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // ─── Token claim helpers ──────────────────────────────────────────────
+    //
+    // Both check `in` before reading, and that is the whole point.
+    //
+    // Reading an ABSENT property off request.auth.token is an EVALUATION ERROR
+    // in the rules engine, not `undefined`. The emulator says so plainly:
+    //
+    //     Property suspended is undefined on object. for 'create' @ L293
+    //
+    // So `request.auth.token.suspended != true` did not evaluate to true for a
+    // user who has never been suspended — it failed to evaluate at all, and
+    // took every rule calling notSuspended() down with it. That is
+    // isRealUser() and isSelfWritable(), which between them gate publishing a
+    // reel, listing a product, commenting, chatting, writing an address, and
+    // rating a seller. Every one of those was denied in production for every
+    // user, because nobody carries a `suspended` claim until the moment they
+    // are suspended.
+    //
+    // The integration suite could not see it: the fixtures write through the
+    // emulator's admin REST endpoint, which bypasses rules entirely, so the
+    // only test that touched this path as a real client was the seller rating.
+    //
+    // Custom claims are absent by default. A rule that reads one has to say so.
+
+    function isModerator() {
+      return signedIn()
+        && 'moderator' in request.auth.token
+        && request.auth.token.moderator == true;
+    }
+
+    /// Absence means "not suspended". Only an explicit `suspended: true` claim
+    /// — set by resolveReport via the Admin SDK — locks an account out.
+    function notSuspended() {
+      return !('suspended' in request.auth.token)
+        || request.auth.token.suspended != true;
+    }
+
+    function isRealUser() {
+      return signedIn()
+        && notSuspended()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isSelfWritable(uid) {
+      return isSelf(uid) && notSuspended();
+    }
+
+    function hasVerifiedPhone() {
+      return isRealUser()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.phone_verified == true;
+    }
+
+    // ─── Order helpers ────────────────────────────────────────────────────
+    //
+    // Both rating collections need the same three facts about the same order.
+    // Written once so reviews and seller_ratings cannot drift apart — they are
+    // two doors onto one guarantee, and a condition tightened on one door only
+    // is a condition not tightened at all.
+
+    function orderExists(orderId) {
+      return exists(/databases/$(database)/documents/orders/$(orderId));
+    }
+
+    function orderData(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data;
+    }
+
+    /// The caller bought this order, it has been delivered, and they are not
+    /// the seller. The self-dealing check is here rather than only in
+    /// placeOrder because a rating is the thing self-dealing exists to farm.
+    function canRateOrder(orderId) {
+      return orderExists(orderId)
+        && orderData(orderId).buyer_id == request.auth.uid
+        && orderData(orderId).seller_id != request.auth.uid
+        && orderData(orderId).status == 'delivered';
+    }
+
+    function sellerTransitionAllowed(from, to) {
+      return (from == 'confirmed' && to in ['packed', 'cancelled'])
+          || (from == 'packed' && to in ['handedToCourier', 'cancelled'])
+          || (from == 'handedToCourier' && to in [
+               'outForDelivery',
+               'delivered'
+             ])
+          || (from == 'outForDelivery' && to == 'delivered');
+    }
+
+    function unchanged(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] == resource.data[field];
+    }
+
+    function cooledDown(field, seconds) {
+      return !exists(
+        /databases/$(database)/documents/rate_limits/$(request.auth.uid)
+      )
+        || !(
+          field in get(
+            /databases/$(database)/documents/rate_limits/$(request.auth.uid)
+          ).data
+        )
+        || request.time.toMillis()
+          - get(
+              /databases/$(database)/documents/rate_limits/$(request.auth.uid)
+            ).data[field].toMillis()
+          > seconds * 1000;
+    }
+
+    // ─── Users ────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      allow read: if signedIn();
+
+      allow create: if isSelf(userId);
+
+      allow update: if isSelfWritable(userId)
+        && unchanged('phone_verified')
+        && unchanged('trust_tier')
+        && unchanged('avg_rating')
+        && unchanged('completed_orders')
+        && unchanged('kyc_verified');
+
+      allow delete: if false;
+
+      match /private/{document} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
+      match /addresses/{addressId} {
+        allow read: if isSelf(userId);
+        allow write: if isSelfWritable(userId);
+      }
+
+      match /payment_methods/{methodId} {
+        allow read: if isSelf(userId);
+        allow write: if isSelfWritable(userId);
+      }
+
+      match /saved_reels/{reelId} {
+        allow read, write: if isSelf(userId);
+      }
+
+      match /favourites/{productId} {
+        allow read, write: if isSelf(userId);
+      }
+
+      match /following/{sellerId} {
+        allow read: if signedIn();
+
+        allow create: if isSelfWritable(userId)
+          && cooledDown('last_follow_at', 2);
+
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /fcm_tokens/{token} {
+        allow read: if false;
+        allow create, delete: if isSelf(userId);
+        allow update: if isSelf(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isSelf(userId);
+        allow create, delete: if false;
+
+        allow update: if isSelf(userId)
+          && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['read']);
+      }
+
+      match /notification_prefs/{doc} {
+        allow read, write: if isSelf(userId);
+      }
+    }
+
+    // ─── Reels ────────────────────────────────────────────────────────────
+
+    match /reels/{reelId} {
+      allow read: if true;
+
+      allow create: if isRealUser()
+        && request.resource.data.author_id == request.auth.uid
+        && request.resource.data.duration_seconds <= 60
+        && request.resource.data.likes_count == 0
+        && request.resource.data.views_count == 0
+        && request.resource.data.rank_score == 0;
+
+      allow update: if isRealUser()
+        && resource.data.author_id == request.auth.uid
+        && unchanged('likes_count')
+        && unchanged('views_count')
+        && unchanged('comments_count')
+        && unchanged('rank_score')
+        && unchanged('buy_now_taps')
+        && unchanged('orders_count')
+        && unchanged('author_id');
+
+      allow delete: if isRealUser()
+        && resource.data.author_id == request.auth.uid;
+
+      match /likes/{userId} {
+        allow read: if true;
+        allow create, delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      // Sharded counters.
+      //
+      // Firestore path wildcards must occupy a complete path segment.
+      // Therefore `/counters_{counterName}/{shardId}` is invalid syntax.
+      //
+      // This rule matches collections such as:
+      //   /counters_likes/{shardId}
+      //   /counters_views/{shardId}
+      //   /counters_comments/{shardId}
+      //
+      // and restricts the collection name to the `counters_` namespace.
+      match /{counterCollection}/{shardId} {
+        allow read: if true;
+
+        allow write: if signedIn()
+          && counterCollection.matches('^counters_[A-Za-z0-9_]+$')
+          && request.resource.data.count is int;
+      }
+
+      match /buy_now_taps/{tapId} {
+        allow read: if false;
+
+        allow create: if signedIn()
+          && request.resource.data.user_id == request.auth.uid;
+
+        allow update, delete: if false;
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+
+        allow create: if isRealUser()
+          && request.resource.data.author_id == request.auth.uid
+          && request.resource.data.text.size() <= 500
+          && cooledDown('last_comment_at', 5);
+
+        allow update, delete: if isRealUser()
+          && resource.data.author_id == request.auth.uid;
+      }
+    }
+
+    // ─── Products ─────────────────────────────────────────────────────────
+
+    match /products/{productId} {
+      allow read: if true;
+
+      allow create: if isRealUser()
+        && request.resource.data.seller_id == request.auth.uid
+        && request.resource.data.price_minor is int
+        && request.resource.data.price_minor > 0
+        && request.resource.data.price_minor <= 1000000000
+        && request.resource.data.stock is int
+        && request.resource.data.stock >= 0
+        && request.resource.data.stock <= 100000
+        && request.resource.data.currency is string;
+
+      allow update: if isRealUser()
+        && resource.data.seller_id == request.auth.uid
+        && unchanged('seller_id')
+        && unchanged('rating_avg')
+        && unchanged('rating_count')
+        && unchanged('sold_count')
+        && request.resource.data.price_minor is int
+        && request.resource.data.price_minor > 0
+        && request.resource.data.price_minor <= 1000000000
+        && request.resource.data.stock is int
+        && request.resource.data.stock >= 0
+        && request.resource.data.stock <= 100000;
+
+      allow delete: if isRealUser()
+        && resource.data.seller_id == request.auth.uid;
+    }
+
+    // ─── Reviews ──────────────────────────────────────────────────────────
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+
+      allow create: if isRealUser()
+        && request.resource.data.author_id == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && canRateOrder(request.resource.data.order_id)
+        && request.resource.data.product_id
+             in orderData(request.resource.data.order_id).product_ids;
+
+      allow update: if isRealUser()
+        && resource.data.author_id == request.auth.uid
+        && request.time < resource.data.created_at + duration.value(48, 'h')
+        && unchanged('order_id')
+        && unchanged('product_id')
+        && unchanged('created_at');
+
+      allow delete: if false;
+    }
+
+    // ─── Seller ratings ───────────────────────────────────────────────────
+    //
+    // The document id IS the order id. That is the one-rating-per-order
+    // guarantee: a second rating is a create against a document that already
+    // exists, and create does not overwrite.
+    //
+    // The three order checks now run through canRateOrder(), which tests
+    // exists() before reading. Previously they did not, so a rating against a
+    // missing or field-stripped order produced an EVALUATION ERROR rather than
+    // a plain false — identical `permission-denied` at the client, but with no
+    // way to tell "this order was never delivered" from "this order is not
+    // there at all".
+    //
+    // The seller_id inequality is checked against the ORDER, not just against
+    // the submitted document. A client controls request.resource.data and could
+    // name any seller_id it liked; only the order says who actually sold it.
+    match /seller_ratings/{ratingId} {
+      allow read: if true;
+
+      allow create: if isRealUser()
+        && request.resource.data.author_id == request.auth.uid
+        && canRateOrder(ratingId)
+        && request.resource.data.seller_id == orderData(ratingId).seller_id
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+
+      allow update, delete: if false;
+    }
+
+    // ─── Orders ───────────────────────────────────────────────────────────
+
+    match /orders/{orderId} {
+      allow read: if signedIn()
+        && (
+          resource.data.buyer_id == request.auth.uid
+          || resource.data.seller_id == request.auth.uid
+        );
+
+      allow create: if false;
+
+      // Buyer cancellation, while the window is open.
+      //
+      // `has_been_rated` is deliberately absent from the affectedKeys list. It
+      // is a function-owned flag, and a buyer who could clear it could rate the
+      // same order repeatedly — which is the whole point of keeping it out of
+      // reach. A client write to it is denied by design.
+      allow update: if signedIn()
+        && resource.data.buyer_id == request.auth.uid
+        && request.resource.data.status == 'cancelled'
+        && resource.data.status in [
+          'pendingPayment',
+          'confirmed',
+          'packed'
+        ]
+        && request.resource.data.cancelled_by == 'buyer'
+        && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'status',
+              'cancelled_at',
+              'cancelled_by',
+              'updated_at'
+            ]);
+
+      allow update: if signedIn()
+        && resource.data.seller_id == request.auth.uid
+        && sellerTransitionAllowed(
+          resource.data.status,
+          request.resource.data.status
+        )
+        && (
+          request.resource.data.status != 'cancelled'
+          || request.resource.data.cancelled_by == 'seller'
+        )
+        && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'status',
+              'updated_at',
+              'delivered_at',
+              'packed_at',
+              'handedToCourier_at',
+              'outForDelivery_at',
+              'cancelled_at',
+              'cancelled_by',
+              'cancellation_reason'
+            ]);
+
+      allow delete: if false;
+    }
+
+    // ─── Config ───────────────────────────────────────────────────────────
+
+    match /config/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── Rate limits ──────────────────────────────────────────────────────
+
+    match /rate_limits/{userId} {
+      allow read: if isSelf(userId);
+
+      allow create: if isSelf(userId);
+
+      allow update: if isSelf(userId)
+        && request.resource.data.keys().hasOnly([
+          'last_comment_at',
+          'last_follow_at',
+          'last_report_at'
+        ])
+        && (
+          !('last_comment_at' in request.resource.data)
+          || request.resource.data.last_comment_at == request.time
+        )
+        && (
+          !('last_follow_at' in request.resource.data)
+          || request.resource.data.last_follow_at == request.time
+        )
+        && (
+          !('last_report_at' in request.resource.data)
+          || request.resource.data.last_report_at == request.time
+        );
+
+      allow delete: if false;
+    }
+
+    // ─── Promo codes ──────────────────────────────────────────────────────
+
+    match /promo_codes/{code} {
+      allow read, write: if false;
+
+      match /redemptions/{uid} {
+        allow read, write: if false;
+      }
+    }
+
+    // ─── Moderation ───────────────────────────────────────────────────────
+
+    match /moderation_log/{entryId} {
+      allow read: if isModerator();
+      allow write: if false;
+    }
+
+    match /pending_uploads/{uploadId} {
+      allow read, write: if false;
+    }
+
+    match /phone_claims/{phoneNumber} {
+      allow read, write: if false;
+    }
+
+    match /promo_attempts/{userId}/attempts/{attemptId} {
+      allow read, write: if false;
+    }
+
+    match /otp_requests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /idempotency_keys/{key} {
+      allow read, write: if false;
+    }
+
+    // ─── Chat ─────────────────────────────────────────────────────────────
+
+    match /conversations/{conversationId} {
+      allow read: if signedIn()
+        && request.auth.uid in resource.data.participant_ids;
+
+      allow create: if isRealUser()
+        && request.auth.uid in request.resource.data.participant_ids;
+
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participant_ids;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && exists(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          )
+          && request.auth.uid in get(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.participant_ids;
+
+        allow create: if isRealUser()
+          && request.resource.data.sender_id == request.auth.uid
+          && request.resource.data.text.size() <= 2000
+          && exists(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          )
+          && request.auth.uid in get(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.participant_ids;
+
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── Reports ──────────────────────────────────────────────────────────
+
+    match /reports/{reportId} {
+      allow read: if isModerator();
+
+      allow create: if signedIn()
+        && request.resource.data.reporter_id == request.auth.uid
+        && cooledDown('last_report_at', 30)
+        && request.resource.data.action == 'pending'
+        && request.resource.data.report_count == 1
+        && request.resource.data.target_id is string
+        && request.resource.data.target_type is string
+        && request.resource.data.reason is string;
+
+      allow update, delete: if false;
+    }
+
+    // ─── Blocks ───────────────────────────────────────────────────────────
+
+    match /blocks/{userId}/blocked/{blockedId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    match /deletion_requests/{userId} {
+      allow create: if isSelf(userId);
+      allow read, update, delete: if false;
+    }
+
+    // ─── Default deny ─────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

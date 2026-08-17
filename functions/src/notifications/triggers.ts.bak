@@ -1,0 +1,201 @@
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import * as admin from "firebase-admin";
+import { sendNotification } from "./send";
+
+/**
+ * Order status changes, to the buyer.
+ *
+ * Only the three stages the customer actually sees (§5.2). Notifying on every
+ * internal transition would mean a buzz for "packed" and another for "handed to
+ * courier" — the exact over-notification that drives early uninstalls, and a
+ * contradiction of the simplified tracker.
+ */
+export const notifyOrderStatus = onDocumentUpdated(
+  "orders/{orderId}",
+  async (event) => {
+    const before = event.data?.before.get("status");
+    const after = event.data?.after.get("status");
+    if (!after || before === after) return;
+
+    const buyerId = event.data?.after.get("buyer_id") as string;
+    const orderId = event.params.orderId;
+
+    const message = customerFacingMessage(after);
+    if (!message) return; // an internal-only transition
+
+    await sendNotification({
+      uid: buyerId,
+      type: "order_update",
+      title: message.title,
+      body: message.body,
+      data: { order_id: orderId },
+    });
+  }
+);
+
+function customerFacingMessage(
+  status: string
+): { title: string; body: string } | null {
+  switch (status) {
+    case "confirmed":
+      return {
+        title: "Order confirmed",
+        body: "The seller has your order and is getting it ready.",
+      };
+    case "handedToCourier":
+      return {
+        title: "On the way",
+        body: "Your order has left the seller. The courier will call you.",
+      };
+    case "delivered":
+      return {
+        title: "Delivered",
+        body: "Enjoy it. Rating the seller helps the next buyer.",
+      };
+    case "cancelled":
+      return {
+        title: "Order cancelled",
+        body: "Anything paid is refunded to the original method.",
+      };
+    default:
+      // packed, outForDelivery, payment states — real, and none of the
+      // buyer's business.
+      return null;
+  }
+}
+
+/** A new order, to the seller. The one notification they most need. */
+export const notifyNewOrder = onDocumentCreated(
+  "orders/{orderId}",
+  async (event) => {
+    const sellerId = event.data?.get("seller_id") as string;
+    if (!sellerId) return;
+
+    const items = (event.data?.get("items") as Array<{ title: string }>) ?? [];
+    const first = items[0]?.title ?? "an item";
+
+    await sendNotification({
+      uid: sellerId,
+      type: "order_placed",
+      title: "You sold something",
+      body: items.length > 1
+        ? `${first} and ${items.length - 1} more. Pack it when you can.`
+        : `${first}. Pack it when you can.`,
+      data: { order_id: event.params.orderId },
+    });
+  }
+);
+
+/**
+ * A comment, to the Reel's author.
+ *
+ * In a Reels-to-purchase funnel a comment is usually a pre-purchase question,
+ * so an unanswered one is a lost sale. That is why this is an order-grade
+ * signal rather than ordinary social noise.
+ */
+export const notifyReelComment = onDocumentCreated(
+  "reels/{reelId}/comments/{commentId}",
+  async (event) => {
+    const db = admin.firestore();
+    const reelId = event.params.reelId;
+
+    const reel = await db.collection("reels").doc(reelId).get();
+    const authorId = reel.get("author_id") as string;
+    const commenterId = event.data?.get("author_id") as string;
+
+    // Never notify someone about their own action.
+    if (!authorId || authorId === commenterId) return;
+
+    const commenterName = event.data?.get("author_name") ?? "Someone";
+    const text = String(event.data?.get("text") ?? "");
+
+    await sendNotification({
+      uid: authorId,
+      type: "reel_comment",
+      title: `${commenterName} commented`,
+      // Truncated: a notification is a summary, and the full text is one tap
+      // away.
+      body: text.length > 100 ? `${text.slice(0, 97)}…` : text,
+      data: { reel_id: reelId },
+    });
+  }
+);
+
+/// A seller rating, to the seller.
+///
+/// Shares a trigger path with `recomputeTrustTier`. That is intentional and
+/// safe: they touch different fields on the user document and Firestore merges
+/// concurrent field-level writes. Combining them would couple a notification
+/// failure to a tier calculation, and a push that fails to send must not
+/// prevent a badge from updating.
+export const notifyNewRating = onDocumentCreated(
+  "seller_ratings/{ratingId}",
+  async (event) => {
+    const sellerId = event.data?.get("seller_id") as string;
+    const rating = Number(event.data?.get("rating") ?? 0);
+    if (!sellerId) return;
+
+    await sendNotification({
+      uid: sellerId,
+      type: "new_rating",
+      title: `You got ${rating} star${rating === 1 ? "" : "s"}`,
+      body: "Your rating and tier have been updated.",
+    });
+  }
+);
+
+/// A new follower. Shares its path with `onFollowChanged` for the same reason
+/// as above — one counts, one notifies, and neither should block the other.
+export const notifyNewFollower = onDocumentCreated(
+  "users/{uid}/following/{sellerId}",
+  async (event) => {
+    const followerId = event.params.uid;
+    const sellerId = event.params.sellerId;
+    if (followerId === sellerId) return;
+
+    const follower = await admin
+      .firestore()
+      .collection("users")
+      .doc(followerId)
+      .get();
+
+    await sendNotification({
+      uid: sellerId,
+      type: "new_follower",
+      title: "New follower",
+      body: `${follower.get("display_name") ?? "Someone"} is following you.`,
+      data: { follower_id: followerId },
+    });
+  }
+);
+
+/** A chat message, to whoever did not send it. */
+export const notifyChatMessage = onDocumentCreated(
+  "conversations/{conversationId}/messages/{messageId}",
+  async (event) => {
+    const db = admin.firestore();
+    const conversationId = event.params.conversationId;
+
+    const conversation = await db
+      .collection("conversations")
+      .doc(conversationId)
+      .get();
+
+    const participants =
+      (conversation.get("participant_ids") as string[]) ?? [];
+    const senderId = event.data?.get("sender_id") as string;
+    const recipientId = participants.find((id) => id !== senderId);
+    if (!recipientId) return;
+
+    const names =
+      (conversation.get("participant_names") as Record<string, string>) ?? {};
+    const text = String(event.data?.get("text") ?? "");
+
+    await sendNotification({
+      uid: recipientId,
+      type: "chat_message",
+      title: names[senderId] ?? "New message",
+      body: text.length > 100 ? `${text.slice(0, 97)}…` : text,
+    });
+  }
+);

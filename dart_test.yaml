@@ -1,0 +1,23 @@
+# Test tags.
+#
+# Golden tests compare against reference PNGs that are generated, not written —
+# `flutter test --update-goldens test/golden` produces them, and they must be
+# generated on the machine that will run CI because fonts and rasterisation
+# differ between platforms.
+#
+# That means a fresh clone has no references, and an untagged golden test fails
+# on the first `flutter test` anyone runs. A new contributor's first impression
+# should not be a red suite they did nothing to cause — and worse, a suite that
+# is red by default is a suite people stop reading.
+#
+# So goldens are excluded unless asked for:
+#
+#     flutter test                      # everything except goldens
+#     flutter test --tags golden        # goldens only, needs references
+#     flutter test --run-skipped        # ignore this file entirely
+tags:
+  golden:
+    # Skipped by default rather than excluded, so the runner reports how many
+    # were skipped. Silently omitting them would let someone believe the goldens
+    # ran and passed.
+    skip: "Run `flutter test --update-goldens test/golden` first, then `flutter test --tags golden`."

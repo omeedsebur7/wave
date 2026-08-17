@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Images and static assets only. All Reel and product VIDEO goes to Bunny
+// Stream (§6), never to Cloud Storage — which is why there is no video path
+// here at all.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isRealUser() {
+      return request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && isImage()
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /products/{sellerId}/{fileName} {
+      allow read: if true;
+      allow write: if isRealUser()
+        && request.auth.uid == sellerId
+        && isImage()
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

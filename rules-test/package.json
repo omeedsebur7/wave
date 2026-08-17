@@ -1,0 +1,21 @@
+{
+  "name": "wave-rules-test",
+  "private": true,
+  "description": "Security Rules test suite. Runs against the Firestore emulator.",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project wave-rules-test 'jest --runInBand'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.0.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.0",
+    "@types/jest": "^29.5.13"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testTimeout": 20000
+  }
+}

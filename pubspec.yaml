@@ -1,0 +1,184 @@
+name: wave
+description: WAVE — social commerce. Reels that convert directly to sales.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+# NOTE: versions below are a starting point. Per §6 of the brief, confirm the
+# current published versions (especially video_player / chewie / firebase_*)
+# before locking dependencies. Run `flutter pub upgrade --major-versions`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  firebase_storage: ^12.3.2
+  firebase_messaging: ^15.1.3
+  firebase_analytics: ^11.3.3
+  firebase_crashlytics: ^4.1.3
+  firebase_performance: ^0.10.0+8
+  firebase_remote_config: ^5.1.3
+  firebase_app_check: ^0.3.1+3
+  cloud_functions: ^5.1.3
+
+  # Auth providers
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.2
+
+  # State management + DI
+  flutter_bloc: ^9.1.1
+  bloc: ^9.0.0
+  get_it: ^8.0.0
+  injectable: ^3.0.0
+
+  # Models
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
+  equatable: ^2.0.5
+
+  # Navigation
+  go_router: ^14.3.0
+
+  # Video (Bunny Stream is consumed as a plain HLS URL — no Bunny SDK needed)
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+
+  # Media / caching
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
+  image_picker: ^1.1.2
+  video_compress: ^3.1.3
+
+  # Platform / utils
+  connectivity_plus: ^6.0.5
+  http: ^1.2.2
+  flutter_secure_storage: ^9.2.2
+  intl: ^0.20.2
+  pdf: ^3.11.1
+  printing: ^5.13.2
+  package_info_plus: ^8.0.2
+  path_provider: ^2.1.4
+  share_plus: ^10.0.2
+  shared_preferences: ^2.3.2
+  url_launcher: ^6.3.1
+
+  # Maps. OpenStreetMap tiles via flutter_map — no API key, no per-map-load
+  # billing, and the data is ODbL rather than a proprietary licence. See
+  # OsmConfig for the tile-hosting decision that has to be made before launch.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.1
+  uuid: ^4.5.1
+  dartz: ^0.10.1
+  logger: ^2.4.0
+
+  # P2 — intentionally NOT added yet (see §3.6):
+  # model_viewer_plus: for the live .glb/.gltf product viewer
+  # local_auth:        for biometric login
+
+  flutter_native_splash: any
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.1
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  build_runner: ^2.15.1
+  freezed: ^3.2.5
+  json_serializable: ^6.8.0
+  injectable_generator: ^3.0.2
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.4
+  golden_toolkit: ^0.15.0
+  very_good_analysis: ^6.0.0
+  fake_cloud_firestore: ^3.0.3
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/brand/
+    - assets/images/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+
+
+# ── App icon ─────────────────────────────────────────────────────────────────
+# Regenerate after changing any source image:
+#     dart run flutter_launcher_icons
+#
+# Three images rather than one, because each platform crops differently:
+#   icon.png             opaque, 78% occupancy — iOS rejects alpha in app icons
+#   icon_foreground.png  transparent, 55%      — Android masks to a 66% circle
+#   background is flat black, which is the artwork's own ground
+#
+# The source art fills 84% of its frame. Shipping that straight to an adaptive
+# icon slices both ends off the W, which is why the derivatives exist.
+flutter_launcher_icons:
+  image_path: "assets/brand/icon.png"
+  android: true
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/brand/icon_foreground.png"
+  # Android 13+ themed icon. Monochrome, so the launcher can tint it to the
+  # user's wallpaper — the neon gradient is discarded here by design.
+  adaptive_icon_monochrome: "assets/brand/icon_foreground.png"
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/brand/icon.png"
+    background_color: "#000000"
+    theme_color: "#000000"
+
+# ── Splash screen ────────────────────────────────────────────────────────────
+# Regenerate after changing any source image:
+#     dart run flutter_native_splash:create
+#
+# Black in both themes. The mark is a glow on black — on a light background it
+# loses the halo that makes it read, so there is no light variant.
+flutter_native_splash:
+  color: "#000000"
+  color_dark: "#000000"
+  image: "assets/brand/splash.png"
+  image_dark: "assets/brand/splash.png"
+
+  android_12:
+    # Android 12+ draws the icon inside a 240dp circle and masks to 160dp, so
+    # this uses a separately padded source. Reusing splash.png here would clip
+    # the outer strokes.
+    image: "assets/brand/splash_android12.png"
+    image_dark: "assets/brand/splash_android12.png"
+    color: "#000000"
+    color_dark: "#000000"
+
+  android: true
+  ios: true
+  web: false
+
+  # Legacy fullscreen splash on Android 11 and below.
+  fullscreen: true
