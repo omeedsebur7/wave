@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:wave/core/config/emulator.dart';
-import 'package:wave/firebase_options.dart';
+import 'package:wave/firebase/firebase_options_dev.dart';
 
 import 'helpers/seed.dart';
 
@@ -13,7 +13,8 @@ import 'helpers/seed.dart';
 ///
 /// Run against the Firebase emulator suite, never production:
 ///
-///     firebase emulators:start --only auth,firestore,functions
+///     firebase emulators:start --project wave-dev-bb9da \
+///       --only auth,firestore,functions
 ///     flutter test integration_test/purchase_flow_test.dart \
 ///       --dart-define=USE_EMULATOR=true
 ///
@@ -23,6 +24,21 @@ import 'helpers/seed.dart';
 ///       --dart-define=EMULATOR_HOST=192.168.1.x
 ///
 /// and start the suite with `--host 0.0.0.0` so it binds beyond 127.0.0.1.
+///
+/// Initializes against the DEV project (wave-dev-bb9da), never staging or
+/// production. Firebase.initializeApp() previously pointed at
+/// `wave/firebase_options.dart` — a single, unflavored file that predated
+/// staging and production having their own generated options and has since
+/// been deleted, since nothing else in the app referenced it. This is the
+/// dedicated replacement rather than a repoint onto staging: a test suite
+/// that wipes ten entire collections on every run should not share a project
+/// with anything a human might also be looking at, even one gated behind
+/// USE_EMULATOR. Since every network call this file makes is redirected to
+/// the local emulator suite below regardless of which project the options
+/// name, `projectId` here only has to be consistent with itself — but it
+/// still has to be a REAL project the emulator was started against, or
+/// Firestore's REST admin endpoints (used by TestSeed's fixture helpers)
+/// resolve against a project that does not exist and 404.
 ///
 /// These exercise the DATA layer end to end — repositories, Cloud Functions,
 /// Security Rules — rather than driving widgets. That is deliberate: the
@@ -51,15 +67,14 @@ void main() {
     // two, so a missing flag must abort rather than default to "probably
     // local" — the failure mode of guessing wrong here is unrecoverable and
     // the failure mode of being strict is a one-line command fix.
-    const useEmulator =
-        bool.fromEnvironment('USE_EMULATOR');
+    const useEmulator = bool.fromEnvironment('USE_EMULATOR');
     if (!useEmulator) {
       throw StateError(
         'Refusing to run: --dart-define=USE_EMULATOR=true was not passed. '
         'These tests wipe entire collections and must never touch a real '
         'project. Start the suite with '
-        '`firebase emulators:start --only auth,firestore,functions` and '
-        'rerun with the flag.',
+        '`firebase emulators:start --project wave-dev-bb9da '
+        '--only auth,firestore,functions` and rerun with the flag.',
       );
     }
 

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "751618338182",
+    "project_id": "wave-prod-a529f",
+    "storage_bucket": "wave-prod-a529f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:751618338182:android:1ad2bfaf0ccc4b39fb1007",
+        "android_client_info": {
+          "package_name": "com.example.wave"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "751618338182-pscaq7i4433df6ubgpvsq67ijrtlkcdp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiuhTvkInGWqoKPto0M6pV8o3dMw4HWE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "751618338182-pscaq7i4433df6ubgpvsq67ijrtlkcdp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "751618338182-08gu0rcmu2irdhkm633plpu8443h2ous.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.wave1"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

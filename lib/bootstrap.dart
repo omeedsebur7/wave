@@ -16,7 +16,27 @@ import 'package:wave/core/services/startup_trace.dart';
 import 'package:wave/features/location/data/osm_config.dart';
 
 /// Shared startup for all three flavors.
-Future<void> bootstrap(Flavor flavor) async {
+///
+/// [options] is now an explicit parameter rather than assumed.
+///
+/// `Firebase.initializeApp()` with no arguments resolves configuration from
+/// PLATFORM-NATIVE files — `google-services.json` per Android product flavor,
+/// `GoogleService-Info.plist` per iOS scheme. That works for Android, because
+/// Gradle merges the flavor's source set automatically at build time. It does
+/// NOT reliably work for iOS, where scheme-based config swapping needs more
+/// than a source-set copy to guarantee the right plist is picked up — and it
+/// silently worked for neither if a stray, unflavored
+/// `lib/firebase_options.dart` ever sat at the default import path a careless
+/// `options:` argument could resolve to instead.
+///
+/// So the Dart-level source of truth is now explicit and per-flavor:
+/// `lib/firebase/firebase_options_staging.dart` (wave-staging-d1b41) and
+/// `lib/firebase/firebase_options_production.dart` (wave-prod-a529f), each
+/// selected by the entry point that calls this function — see
+/// `main_staging.dart` / `main_production.dart`. Native config still has to
+/// match, but Dart-level initialization no longer depends on it silently
+/// being correct.
+Future<void> bootstrap(Flavor flavor, FirebaseOptions options) async {
   // Captured before anything else, including Firebase.initializeApp: the span
   // that matters is from the first line of Dart to the first painted frame, and
   // every await added ahead of that frame lands inside it.
@@ -39,9 +59,10 @@ Future<void> bootstrap(Flavor flavor) async {
       WidgetsFlutterBinding.ensureInitialized();
       AppConfig.flavor = flavor;
 
-      // firebase_options_<flavor>.dart is generated per flavor by the
-      // FlutterFire CLI and is gitignored. See README.
-      await Firebase.initializeApp();
+      // Explicit per-flavor options, not native-config resolution. See the
+      // function doc above for why the implicit form was not trustworthy
+      // across both platforms.
+      await Firebase.initializeApp(options: options);
 
       // Before anything else touches Firebase — a service that has already
       // resolved its endpoint cannot be redirected afterwards.

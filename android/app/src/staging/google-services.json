@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "603680480346",
+    "project_id": "wave-staging-d1b41",
+    "storage_bucket": "wave-staging-d1b41.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603680480346:android:45687f4af692866dd00c63",
+        "android_client_info": {
+          "package_name": "com.example.wave"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFJuSoQeq65F_ff_sYVt1qXslUCZJpx2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603680480346:android:d174942469dae2f2d00c63",
+        "android_client_info": {
+          "package_name": "com.example.wave1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFJuSoQeq65F_ff_sYVt1qXslUCZJpx2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

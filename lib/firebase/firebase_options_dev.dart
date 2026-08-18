@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart'
 ///
 /// Example:
 /// ```dart
-/// import 'firebase_options.dart';
+/// import 'firebase_options_dev.dart';
 /// // ...
 /// await Firebase.initializeApp(
 ///   options: DefaultFirebaseOptions.currentPlatform,
@@ -63,7 +63,6 @@ class DefaultFirebaseOptions {
     projectId: 'wave-dev-bb9da',
     storageBucket: 'wave-dev-bb9da.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDx76pN9tc3-rTRprIrTjLbDDjF_Z3dI-I',
     appId: '1:802491262696:ios:3402de6e8af70847390b5d',

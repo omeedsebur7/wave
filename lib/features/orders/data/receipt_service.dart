@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:wave/core/utils/money.dart';
@@ -70,6 +71,65 @@ class ReceiptStrings {
 class ReceiptService {
   const ReceiptService();
 
+  /// The Unicode font, loaded once and reused across every receipt.
+  ///
+  /// pdf's built-in `pw.Font` faces (Helvetica and friends) are the 14
+  /// standard PDF core fonts, which cover Latin text and nothing else. Every
+  /// receipt for an Arabic or Kurdish name, seller, or delivery address —
+  /// which per `WaveLocalizations`, two of this app's three launch locales —
+  /// rendered as blank boxes, silently, with only a console warning
+  /// ("Helvetica has no Unicode support") that nobody sees on a customer's
+  /// device. The existing test suite could not have caught it: it only
+  /// asserts the PDF bytes are non-empty, never that the glyphs in it are the
+  /// ones that were asked for.
+  ///
+  /// Uses IBMPlexSansArabic — already declared in pubspec.yaml for the
+  /// in-app UI, so this needs no new asset and no pubspec change. It covers
+  /// the Arabic script block, which both Arabic and Sorani Kurdish (written
+  /// in Arabic script, not Latin) are built from, and its Latin glyphs cover
+  /// English too, so one face serves all three launch locales on one
+  /// document — useful here specifically, since a single receipt routinely
+  /// mixes scripts: an Arabic seller name beside a Latin order id, an English
+  /// UI string beside a Kurdish delivery note.
+  ///
+  /// Only two weights are declared for this family — 400 and 600 — so 600
+  /// (SemiBold) stands in for every place this file asks for `bold`. That is
+  /// a font family a UI designer chose for on-screen legibility, not a print
+  /// designer choosing print weights; if the semibold-as-bold substitution
+  /// reads as too heavy or too light on actual printed paper, that is a
+  /// design call worth revisiting deliberately, not a byproduct of this fix.
+  ///
+  /// Loaded lazily and cached in a static so a seller generating several
+  /// receipts in a session pays the asset-read cost once, not per document.
+  static Future<pw.ThemeData>? _themeFuture;
+
+  static Future<pw.ThemeData> _theme() {
+    return _themeFuture ??= _loadTheme();
+  }
+
+  static Future<pw.ThemeData> _loadTheme() async {
+    final regularBytes = await rootBundle.load(
+      'assets/fonts/IBMPlexSansArabic-Regular.ttf',
+    );
+    final semiBoldBytes = await rootBundle.load(
+      'assets/fonts/IBMPlexSansArabic-SemiBold.ttf',
+    );
+
+    final regular = pw.Font.ttf(regularBytes);
+    final semiBold = pw.Font.ttf(semiBoldBytes);
+
+    return pw.ThemeData.withFont(
+      base: regular,
+      bold: semiBold,
+      // Applied to italic/boldItalic too, since this family has no separate
+      // italic weight and pdf falls back to Helvetica for any style left
+      // unset — which reintroduces the exact bug this exists to fix, just on
+      // whichever style nobody thought to set explicitly.
+      italic: regular,
+      boldItalic: semiBold,
+    );
+  }
+
   Future<Uint8List> generate({
     required Order order,
     required String sellerName,
@@ -77,7 +137,10 @@ class ReceiptService {
     String? buyerName,
     String? deliveryAddress,
   }) async {
-    final doc = pw.Document(title: strings.documentTitle);
+    final doc = pw.Document(
+      title: strings.documentTitle,
+      theme: await _theme(),
+    );
 
     doc.addPage(
       pw.Page(

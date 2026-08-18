@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "dev": "wave-dev-bb9da",
+    "staging": "wave-staging-d1b41",
+    "prod": "wave-prod-a529f"
+  },
+  "targets": {},
+  "etags": {}
+}
