@@ -69,7 +69,6 @@ class FirebaseAnalyticsService implements AnalyticsService {
       error,
       stack,
       reason: 'analytics: $context',
-      fatal: false,
     )
     .catchError((_) {});
     }

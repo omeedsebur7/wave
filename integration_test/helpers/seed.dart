@@ -542,7 +542,7 @@ class TestSeed {
       throw StateError(
         'submitSellerRating would write as $authorId, but the test expected '
         '$expectedAuthorId. A later seedSeller/signIn call replaced the '
-        'session — the rating must be submitted by the order\'s buyer.',
+        "session — the rating must be submitted by the order's buyer.",
       );
     }
 

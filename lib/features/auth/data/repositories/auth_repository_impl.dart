@@ -133,7 +133,14 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: gAuth.accessToken,
         idToken: gAuth.idToken,
       );
-      return _completeSignIn(credential);
+      // Awaited, not returned directly. `_completeSignIn` can throw
+      // fb.FirebaseAuthException just as much as the calls above it — a
+      // duplicate-credential race during `linkWithCredential`, for instance —
+      // and returning its Future unawaited let that exception escape past the
+      // `catch` immediately below rather than through it. The failure still
+      // surfaced, just as an unhandled async error instead of an AuthFailure,
+      // which is a worse shape for a caller to have to handle.
+      return await _completeSignIn(credential);
     } on fb.FirebaseAuthException catch (e) {
       return Err(
         AuthFailure(
@@ -158,7 +165,9 @@ class AuthRepositoryImpl implements AuthRepository {
         idToken: apple.identityToken,
         accessToken: apple.authorizationCode,
       );
-      return _completeSignIn(credential);
+      // See the identical note in signInWithGoogle above: unawaited, an
+      // exception from _completeSignIn bypassed the catch below it entirely.
+      return await _completeSignIn(credential);
     } on fb.FirebaseAuthException catch (e) {
       return Err(AuthFailure(e.message ?? 'Sign-in failed', code: e.code));
     }
@@ -206,29 +215,32 @@ class AuthRepositoryImpl implements AuthRepository {
     final ref = _db.collection('users').doc(user.uid);
     final consent = _consent;
 
-    await ref.set({
-      'display_name': user.displayName,
-      'photo_url': user.photoUrl,
-      'updated_at': FieldValue.serverTimestamp(),
+    await ref.set(
+      {
+        'display_name': user.displayName,
+        'photo_url': user.photoUrl,
+        'updated_at': FieldValue.serverTimestamp(),
 
-      // Consent is written on first sign-in and never overwritten afterwards:
-      // a later session must not silently re-stamp an acceptance the user gave
-      // against an older version of the terms. Re-acceptance goes through the
-      // versioned gate in the legal feature instead.
-      if (consent != null && consent.acceptedTerms) ...{
-        'accepted_terms_version': consent.termsVersion,
-        'accepted_terms_at': FieldValue.serverTimestamp(),
-        'accepted_legal': {'terms': consent.termsVersion},
-      },
-      if (consent != null && consent.confirmedAge) ...{
-        'age_confirmed': true,
-        'age_confirmed_at': FieldValue.serverTimestamp(),
-      },
+        // Consent is written on first sign-in and never overwritten afterwards:
+        // a later session must not silently re-stamp an acceptance the user gave
+        // against an older version of the terms. Re-acceptance goes through the
+        // versioned gate in the legal feature instead.
+        if (consent != null && consent.acceptedTerms) ...{
+          'accepted_terms_version': consent.termsVersion,
+          'accepted_terms_at': FieldValue.serverTimestamp(),
+          'accepted_legal': {'terms': consent.termsVersion},
+        },
+        if (consent != null && consent.confirmedAge) ...{
+          'age_confirmed': true,
+          'age_confirmed_at': FieldValue.serverTimestamp(),
+        },
 
-      // Never write phone_verified from the client — only the Cloud Function
-      // does, and Security Rules reject it from anywhere else.
-      'created_at': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true),);
+        // Never write phone_verified from the client — only the Cloud Function
+        // does, and Security Rules reject it from anywhere else.
+        'created_at': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
 
     // Consumed once. Holding it would re-stamp on every subsequent sign-in.
     _consent = null;
@@ -321,7 +333,14 @@ class AuthRepositoryImpl implements AuthRepository {
         },
         codeAutoRetrievalTimeout: (_) {},
       );
-      return completer.future;
+      // Awaited rather than `return completer.future;`. The unawaited form put
+      // the completer's Future outside this try block's effective coverage: if
+      // completing it later somehow threw (or, more realistically, a linter
+      // and a future maintainer both reasonably assume a try/catch here means
+      // every failure from this method is caught), the `catch` below it would
+      // never run. `await` puts the resolution — success or failure — back
+      // inside the block the catch actually guards.
+      return await completer.future;
     } on fb.FirebaseAuthException catch (e) {
       return Err(
         AuthFailure(
@@ -355,9 +374,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (failure != null) return Err(failure);
 
     final refreshed = await _toWaveUser(_auth.currentUser);
-    return refreshed == null
-        ? result
-        : Success(refreshed);
+    return refreshed == null ? result : Success(refreshed);
   }
 
   /// Asks the backend to confirm the phone on the auth record and set
