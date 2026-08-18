@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "603680480346",
-    "project_id": "wave-staging-d1b41",
-    "storage_bucket": "wave-staging-d1b41.firebasestorage.app"
+    "project_number": "802491262696",
+    "project_id": "wave-dev-bb9da",
+    "storage_bucket": "wave-dev-bb9da.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:603680480346:android:45687f4af692866dd00c63",
+        "mobilesdk_app_id": "1:802491262696:android:e88ec61a912a0a39390b5d",
         "android_client_info": {
           "package_name": "com.example.wave"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBFJuSoQeq65F_ff_sYVt1qXslUCZJpx2U"
+          "current_key": "AIzaSyDEpRJPqLVYKW1ooeNTY7bnBvN-NBV6jMs"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:603680480346:android:756297e59de058edd00c63",
+        "mobilesdk_app_id": "1:802491262696:android:cf2fcea04de7cb6e390b5d",
         "android_client_info": {
-          "package_name": "com.example.wave.staging"
+          "package_name": "com.example.wave.dev"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBFJuSoQeq65F_ff_sYVt1qXslUCZJpx2U"
+          "current_key": "AIzaSyDEpRJPqLVYKW1ooeNTY7bnBvN-NBV6jMs"
         }
       ],
       "services": {
