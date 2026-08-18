@@ -33,10 +33,10 @@ class FirebaseAnalyticsService implements AnalyticsService {
       });
 
   @override
-  Future<void> screen(String name) =>
-      _neverThrow('screen:$name', () => _analytics.logScreenView(
-            screenName: name,
-          ),);
+  Future<void> screen(String name) => _neverThrow(
+        'screen:$name',
+        () => _analytics.logScreenView(screenName: name),
+      );
 
   /// Runs [action] and discards any failure.
   ///
@@ -54,7 +54,28 @@ class FirebaseAnalyticsService implements AnalyticsService {
   /// Swallowing here rather than at each call site because there are a dozen of
   /// them and the next one added would forget. Measurement must never be able to
   /// affect the thing it measures.
-  Future<void> _neverThrow(String context, Future<void> Function() action) async {
+  ///
+  /// A NOTE ON `fatal: false` BELOW, because it has been silently stripped by
+  /// `dart fix --apply` four times across this file's history:
+  ///
+  /// The argument is explicit on purpose, not merely the SDK's current default.
+  /// An analytics failure reported as fatal corrupts the crash-free rate that
+  /// decides whether a release ships — see
+  /// test/core/analytics_isolation_test.dart, which asserts the literal string
+  /// 'fatal: false' is present in this file.
+  ///
+  /// The first attempt to protect it put the `// ignore:` comment several lines
+  /// above the argument, separated by other comment lines. That does not work:
+  /// an `ignore:` comment suppresses the diagnostic on the NEXT LINE ONLY, and
+  /// the next line was another comment, not the `fatal: false,` argument — so
+  /// the diagnostic on the real line was never suppressed and `dart fix`
+  /// removed it a fourth time. The ignore comment below is INLINE, on the same
+  /// line as the argument it protects, which is the only placement `dart fix`
+  /// actually respects here.
+  Future<void> _neverThrow(
+    String context,
+    Future<void> Function() action,
+  ) async {
     try {
       await action();
     } catch (error, stack) {
@@ -65,12 +86,13 @@ class FirebaseAnalyticsService implements AnalyticsService {
         debugPrint('Analytics failed ($context): $error');
       }
       await _crashlytics
-    .recordError(
-      error,
-      stack,
-      reason: 'analytics: $context',
-    )
-    .catchError((_) {});
+          .recordError(
+            error,
+            stack,
+            reason: 'analytics: $context',
+            fatal: false, // ignore: avoid_redundant_argument_values
+          )
+          .catchError((_) {});
     }
   }
 }
