@@ -31,33 +31,33 @@ class _LanguagePageState extends State<LanguagePage> {
       // RadioGroup replaces the per-tile groupValue/onChanged pair deprecated
       // after Flutter 3.32.
       //
-      // Typed RadioGroup<String?> rather than <String>, because null is a
-      // MEANINGFUL value here — it is "system default", the first option — not
-      // merely "nothing selected". That overloading predates this migration
-      // and is worth knowing about: RadioGroup also passes null to onChanged
-      // when a selection is cleared, so the two cases are indistinguishable
-      // from the callback alone. It is safe today only because nothing in this
-      // screen can clear a selection; a future `toggleable: true` on any tile
-      // here would silently start setting the locale to system-default on a
-      // second tap of the active row.
-      body: RadioGroup<String?>(
-        groupValue: controller.locale?.languageCode,
+      // Typed RadioGroup<String> rather than <String?>. We use the sentinel
+      // value 'system' to represent the system default locale (which is null
+      // in LocaleController). This prevents a dangerous overlap: RadioGroup
+      // passes null to onChanged when a selection is cleared (e.g. if a future
+      // developer adds toggleable: true). By using a sentinel, a null from
+      // onChanged unambiguously means "cleared" (which we can safely ignore).
+      body: RadioGroup<String>(
+        groupValue: controller.locale?.languageCode ?? 'system',
         onChanged: (code) async {
+          // A null code now unambiguously means the selection was cleared.
+          // We simply ignore it to avoid resetting the language by accident.
+          if (code == null) return;
+
           // Looked up rather than captured from the loop, because the callback
-          // now receives the VALUE, not the option. firstWhere matches the
-          // system-default entry when code is null, since that option's own
-          // locale is null too.
+          // now receives the VALUE, not the option.
           final option = LocaleController.options.firstWhere(
-            (o) => o.locale?.languageCode == code,
+            (o) => (o.locale?.languageCode ?? 'system') == code,
           );
+          
           await controller.setLocale(option.locale);
           if (mounted) setState(() {});
         },
         child: ListView(
           children: [
             for (final option in LocaleController.options)
-              RadioListTile<String?>(
-                value: option.locale?.languageCode,
+              RadioListTile<String>(
+                value: option.locale?.languageCode ?? 'system',
                 // The one row that is NOT a language name. "System default" is
                 // a sentence about the phone's setting, so it is translated
                 // like any other; the entries beside it are endonyms and must
