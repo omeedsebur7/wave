@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart'hide Order;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:injectable/injectable.dart'hide Order;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:injectable/injectable.dart' hide Order;
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/utils/idempotency.dart';
 import 'package:wave/core/utils/result.dart';
@@ -102,6 +103,15 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
     if (blocked != null) return Err(blocked);
 
     try {
+      // دەرهێنانی مۆرکی ئامێرەکە پێش ناردنی ئۆردەرەکە بۆ دۆزینەوەی ساختەکاری
+      String? deviceId;
+      try {
+        deviceId = await FirebaseMessaging.instance.getToken();
+      } catch (_) {
+        // ئەگەر ئامێرەکە پشتگیری نۆتیفیکەیشنی نەدەکرد یان کێشەیەک هەبوو، ڕێگە مەدە ئۆردەرەکە بوەستێت
+        deviceId = 'unknown_device';
+      }
+
       final result = await _functions
           .httpsCallable('placeOrder')
           .call<Map<String, dynamic>>({
@@ -115,6 +125,7 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
         'paymentMethodId': paymentMethodId,
         'sourceReelId': sourceReelId,
         'promoCode': promoCode,
+        'deviceId': deviceId, // <--- لێرەدا دەینێرین بۆ سێرڤەرەکە!
         if (deliveryLocation != null)
           'deliveryLocation': deliveryLocation.toJson(),
       });

@@ -9,9 +9,9 @@ import {
 } from "../domain/trustTier";
 
 /**
- * Seller trust tier (Â§5.2 / Â§3.7).
+ * Seller trust tier (§5.2 / §3.7).
  *
- * Thresholds come from Remote Config, never from constants in this file â€” the
+ * Thresholds come from Remote Config, never from constants in this file — the
  * brief is explicit that they're starting numbers to be tuned once real order
  * volume exists, and a hardcoded threshold means a code deploy to change a
  * business rule.
@@ -25,10 +25,55 @@ export const recomputeTrustTier = onDocumentWritten(
   "seller_ratings/{ratingId}",
   async (event) => {
     const db = getFirestore();
-    const sellerId =
-      event.data?.after?.get("seller_id") ?? event.data?.before?.get("seller_id");
+    
+    const afterSnap = event.data?.after;
+    const sellerId = afterSnap?.get("seller_id") ?? event.data?.before?.get("seller_id");
     if (!sellerId) return;
 
+    // --- لۆژیکی دۆزینەوەی ساختەکاری (Fraud Detection) ---
+    
+
+    // تەنها ئەگەر ڕەیتینگەکە مابێت (نەسڕابێتەوە) و ئۆردەر ئایدی هەبێت
+    if (afterSnap && afterSnap.exists && afterSnap.get("order_id")) {
+      const orderId = afterSnap.get("order_id");
+      
+      const [orderSnap, sellerSnap] = await Promise.all([
+        db.collection("orders").doc(orderId).get(),
+        db.collection("users").doc(sellerId).get()
+      ]);
+
+      if (orderSnap.exists && sellerSnap.exists) {
+        // بەکارهێنانی .get() بۆ ئەوەی VS Code ئیررۆر نەدات
+        const buyerIP = orderSnap.get("client_ip");
+        const buyerDevice = orderSnap.get("device_id");
+        
+        const sellerIP = sellerSnap.get("last_known_ip");
+        const sellerDevice = sellerSnap.get("device_id");
+
+        // ئەگەر ئایپی یان ئامێرەکە ڕێک یەک شت بوون و بەتاڵ نەبوون
+        if ((buyerIP && sellerIP && buyerIP === sellerIP) || 
+            (buyerDevice && sellerDevice && buyerDevice === sellerDevice)) {
+          
+          
+          // نیشانەکردنی فرۆشیارەکە بە ساختەکاری
+          await db.collection("users").doc(sellerId).set({
+            fraud_flag: true,
+            fraud_reason: "self_dealing_detected",
+            fraud_detected_at: FieldValue.serverTimestamp()
+          }, { merge: true });
+
+          // دروستکردنی فیڵدی is_valid لەناو ڕەیتینگەکە
+          await afterSnap.ref.update({
+            is_valid: false,
+            flagged_reason: "multi_account_self_dealing"
+          });
+          
+          console.warn(`🚨 Fraud detected! Seller ${sellerId} tried to rate themselves using Order ${orderId}`);
+        }
+      }
+    }
+
+    // --- حیساباتی ئاسایی Trust Tier ---
     const [ratings, deliveredOrders, sellerCancellations, thresholds] =
       await Promise.all([
         db.collection("seller_ratings").where("seller_id", "==", sellerId).get(),
@@ -38,10 +83,6 @@ export const recomputeTrustTier = onDocumentWritten(
           .where("status", "==", "delivered")
           .count()
           .get(),
-        // Counted separately from buyer cancellations. A buyer changing their
-        // mind says nothing about the seller, and folding the two together
-        // would penalise sellers for their customers' behaviour â€” which would
-        // make the tier reflect luck rather than reliability.
         db
           .collection("orders")
           .where("seller_id", "==", sellerId)
@@ -52,8 +93,11 @@ export const recomputeTrustTier = onDocumentWritten(
         loadThresholds(),
       ]);
 
+    // لێرەدا ڕەیتینگە ساختەکان فلتەر دەکەین پێش ئەوەی تێکەڵی حیساباتەکەی بکەین
+    const validRatings = ratings.docs.filter((d) => d.get("is_valid") !== false);
+    
     const aggregate = aggregateRatings(
-      ratings.docs.map((d) => Number(d.get("rating") ?? 0))
+      validRatings.map((d) => Number(d.get("rating") ?? 0))
     );
 
     const completedOrders = deliveredOrders.data().count;
@@ -70,8 +114,6 @@ export const recomputeTrustTier = onDocumentWritten(
         avg_rating: aggregate.average,
         rating_count: aggregate.count,
         completed_orders: completedOrders,
-        // Stored so the seller can see the number the gate is reading. A tier
-        // that drops for reasons nobody can inspect is a tier people distrust.
         seller_cancellations: cancelledBySeller,
         trust_tier: tier,
         trust_updated_at: FieldValue.serverTimestamp(),
@@ -89,7 +131,7 @@ export const recomputeTrustTier = onDocumentWritten(
  * The tier is denormalised onto product documents so a grid of twenty products
  * can draw twenty trust badges without twenty extra reads of the seller
  * profile. That denormalisation is only worth anything if something keeps it
- * current â€” otherwise every product card shows no badge forever, however
+ * current — otherwise every product card shows no badge forever, however
  * trusted the seller becomes, and the entire tier system is invisible exactly
  * where a buyer is deciding.
  *
@@ -147,26 +189,26 @@ async function loadThresholds(): Promise<Thresholds> {
       return v === undefined ? dflt : Number(v);
     };
     return {
-  bronzeOrders: read("trust_bronze_min_orders", fallback.bronzeOrders),
-  bronzeRating: read("trust_bronze_min_rating", fallback.bronzeRating),
-  silverOrders: read("trust_silver_min_orders", fallback.silverOrders),
-  silverRating: read("trust_silver_min_rating", fallback.silverRating),
-  goldOrders: read("trust_gold_min_orders", fallback.goldOrders),
-  goldRating: read("trust_gold_min_rating", fallback.goldRating),
-  platinumOrders: read("trust_platinum_min_orders", fallback.platinumOrders),
-  platinumRating: read(
-    "trust_platinum_min_rating",
-    fallback.platinumRating,
-  ),
-  minFulfilmentRate: read(
-    "trust_min_fulfilment_rate",
-    fallback.minFulfilmentRate,
-  ),
-  fulfilmentSampleFloor: read(
-    "trust_fulfilment_sample_floor",
-    fallback.fulfilmentSampleFloor,
-  ),
-};
+      bronzeOrders: read("trust_bronze_min_orders", fallback.bronzeOrders),
+      bronzeRating: read("trust_bronze_min_rating", fallback.bronzeRating),
+      silverOrders: read("trust_silver_min_orders", fallback.silverOrders),
+      silverRating: read("trust_silver_min_rating", fallback.silverRating),
+      goldOrders: read("trust_gold_min_orders", fallback.goldOrders),
+      goldRating: read("trust_gold_min_rating", fallback.goldRating),
+      platinumOrders: read("trust_platinum_min_orders", fallback.platinumOrders),
+      platinumRating: read(
+        "trust_platinum_min_rating",
+        fallback.platinumRating,
+      ),
+      minFulfilmentRate: read(
+        "trust_min_fulfilment_rate",
+        fallback.minFulfilmentRate,
+      ),
+      fulfilmentSampleFloor: read(
+        "trust_fulfilment_sample_floor",
+        fallback.fulfilmentSampleFloor,
+      ),
+    };
   } catch {
     return fallback;
   }

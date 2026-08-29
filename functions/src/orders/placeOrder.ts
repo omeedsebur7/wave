@@ -75,7 +75,13 @@ export const placeOrder = onCall({ cors: true }, async (request) => {
     sourceReelId,
     promoCode,
     deliveryLocation,
+    deviceId, // <--- لێرەدا وەریدەگرین لە فڵەتەرەوە
   } = request.data ?? {};
+
+  // دەرهێنانی IP Addressی کڕیارەکە ڕاستەوخۆ لە سێرڤەرەوە
+  const clientIp = request.rawRequest?.ip || null;
+  // دڵنیابوونەوە لە پاکی deviceId
+  const cleanDeviceId = typeof deviceId === "string" && deviceId.trim().length > 0 ? deviceId.trim() : null;
 
   if (
     typeof idempotencyKey !== "string" ||
@@ -453,6 +459,9 @@ export const placeOrder = onCall({ cors: true }, async (request) => {
 
       idempotency_key:
         cleanIdempotencyKey,
+
+      client_ip: clientIp,        // <--- ئایپی کڕیار لێرە تۆمار دەکرێت
+      device_id: cleanDeviceId,   // <--- ئامێری کڕیار لێرە تۆمار دەکرێت
 
       has_been_rated: false,
 

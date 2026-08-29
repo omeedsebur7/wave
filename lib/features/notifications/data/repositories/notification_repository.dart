@@ -91,7 +91,10 @@ class NotificationRepository {
     }
 
     try {
-      await doc.set({channel.name: enabled}, SetOptions(merge: true));
+      await doc.set(
+        {channel.name: enabled},
+        SetOptions(merge: true),
+      );
 
       // Topic subscription mirrors the preference, so an unsubscribed user is
       // not merely filtered client-side — the message is never sent to them.
@@ -120,6 +123,7 @@ class NotificationRepository {
     final token = await _messaging.getToken();
     if (token == null) return;
 
+    // 1. سەیڤکردنی تۆکنەکە بۆ نۆتیفیکەیشن وەک پێشتر
     await _db
         .collection('users')
         .doc(uid)
@@ -129,6 +133,15 @@ class NotificationRepository {
       'token': token,
       'updated_at': FieldValue.serverTimestamp(),
     });
+
+    // 2. سەیڤکردنی هەمان تۆکن وەک مۆرکی ئامێر (device_id) لەسەر پرۆفایلەکە
+    // بۆ ئەوەی سیستەمی دژە-ساختەکاری (Fraud Detection) بیبینێت
+    await _db.collection('users').doc(uid).set(
+      {
+        'device_id': token,
+      },
+      SetOptions(merge: true),
+    );
   }
 
   /// Removes this device's token on sign-out, so the next person to use the
@@ -144,6 +157,15 @@ class NotificationRepository {
         .collection('fcm_tokens')
         .doc(token)
         .delete();
+
+    // کاتێک ئەکاونتەکە دەچێتە دەرەوە، باشترە device_id لابردرێت یان خاڵی بکرێتەوە
+    // بۆ ئەوەی ئەگەر کەسێکی تر هاتە ژوورەوە بە مۆبایلەکە، تێکەڵ نەبێت.
+    await _db.collection('users').doc(uid).set(
+      {
+        'device_id': FieldValue.delete(),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   /// Permission is requested at the moment of first genuine use, never on
