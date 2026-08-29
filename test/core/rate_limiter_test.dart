@@ -29,8 +29,13 @@ void main() {
           RateLimiter(maxEvents: 2, window: const Duration(minutes: 15));
       final t0 = DateTime(2026, 8, 4, 12);
 
-      limiter.check('x', now: t0);
-      limiter.check('x', now: t0);
+      // Cascaded: two consecutive calls on `limiter`, both discarding
+      // check()'s return value — the two calls only exist to fill the
+      // window before the assertions below inspect it. That repetition is
+      // what cascade_invocations flags.
+      limiter
+        ..check('x', now: t0)
+        ..check('x', now: t0);
       expect(limiter.check('x', now: t0), isNotNull);
       expect(
         limiter.check('x', now: t0.add(const Duration(minutes: 16))),

@@ -100,7 +100,20 @@ class WaveMap extends StatelessWidget {
   final MapController controller;
   final ({double lat, double lng}) initialCentre;
   final double initialZoom;
+
+  // Not ours to restructure. This field's shape is dictated by flutter_map's
+  // own MapOptions.onPositionChanged, which is itself
+  // `void Function(MapCamera camera, bool hasGesture)`. Changing this field
+  // to a named-parameter callback type would not change what flutter_map
+  // calls it with — the package calls positionally regardless — it would
+  // only make this field's type stop matching what MapOptions.
+  // onPositionChanged actually wants, which breaks the assignment below
+  // rather than fixing anything. The lint is correctly describing a
+  // positional bool; it is incorrectly assuming this code controls the
+  // signature.
+  // ignore: avoid_positional_boolean_parameters
   final void Function(MapCamera camera, bool hasGesture)? onPositionChanged;
+
   final List<Marker> markers;
   final bool interactive;
 

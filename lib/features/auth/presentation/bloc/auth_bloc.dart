@@ -6,6 +6,7 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/analytics/analytics_events.dart';
 import 'package:wave/core/analytics/analytics_service.dart';
 import 'package:wave/core/error/failures.dart';
+import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/auth/domain/entities/wave_user.dart';
 import 'package:wave/features/auth/domain/repositories/auth_repository.dart';
 import 'package:wave/features/location/data/saved_location_store.dart';
@@ -139,21 +140,33 @@ class AuthState extends Equatable {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._repo, this._analytics, this._notifications)
       : super(const AuthState()) {
-    on<AuthStarted>(_onStarted);
-    on<ConsentCaptured>(
-      (e, _) => _repo.captureConsent(
-        acceptedTerms: e.acceptedTerms,
-        confirmedAge: e.confirmedAge,
-        termsVersion: e.termsVersion,
-      ),
-    );
-    on<_AuthUserChanged>(_onUserChanged);
-    on<GoogleSignInRequested>(_onGoogle);
-    on<AppleSignInRequested>(_onApple);
-    on<GuestSessionRequested>(_onGuest);
-    on<OtpRequested>(_onOtpRequested);
-    on<OtpSubmitted>(_onOtpSubmitted);
-    on<SignOutRequested>(_onSignOut);
+    // Cascaded off an explicit `this` rather than nine separate
+    // `on<...>(...)` statements against the same implicit receiver — that
+    // repetition is exactly what cascade_invocations flags.
+    //
+    // `this`, not the return value of the first `on<...>()` call: `on<T>()`
+    // (from bloc's Emittable / EventHandler registration) returns void, and
+    // a cascade must start from an actual object reference to chain further
+    // calls onto — cascading off a void expression does not compile. An
+    // early version of this fix wrote `on<AuthStarted>(_onStarted)
+    // ..on<ConsentCaptured>(...)`, which looks identical to a correct
+    // cascade but tries to call `.on<...>()` on `void`.
+    this
+      ..on<AuthStarted>(_onStarted)
+      ..on<ConsentCaptured>(
+        (e, _) => _repo.captureConsent(
+          acceptedTerms: e.acceptedTerms,
+          confirmedAge: e.confirmedAge,
+          termsVersion: e.termsVersion,
+        ),
+      )
+      ..on<_AuthUserChanged>(_onUserChanged)
+      ..on<GoogleSignInRequested>(_onGoogle)
+      ..on<AppleSignInRequested>(_onApple)
+      ..on<GuestSessionRequested>(_onGuest)
+      ..on<OtpRequested>(_onOtpRequested)
+      ..on<OtpSubmitted>(_onOtpSubmitted)
+      ..on<SignOutRequested>(_onSignOut);
   }
 
   final AuthRepository _repo;
@@ -172,7 +185,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _onUserChanged(_AuthUserChanged e, Emitter<AuthState> emit) {
     final user = e.user;
-    _analytics.setUser(user?.uid);
+    // Deliberately fire-and-forget, wrapped in unawaited() rather than left
+    // bare. AnalyticsService's own contract (see analytics_service.dart) is
+    // that every public method is fire-and-forget by design — nobody should
+    // await a metric before showing a button — but a bare, unawaited Future
+    // is exactly what `bootstrap` routes to Crashlytics as a FATAL error if
+    // it ever throws unhandled. unawaited() marks the omission as
+    // intentional rather than an oversight, which is the whole reason that
+    // function exists in dart:async: it does nothing at runtime and changes
+    // nothing about the fire-and-forget behaviour, it only tells the
+    // analyzer (and the next reader) that this was a decision.
+    unawaited(_analytics.setUser(user?.uid));
 
     emit(
       state.copyWith(
@@ -206,17 +229,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _handleSignInResult(result, emit, 'apple');
   }
 
+  /// Typed as `Result<WaveUser>`, not `dynamic`.
+  ///
+  /// `_repo.signInWithGoogle()` / `signInWithApple()` both return
+  /// `Future<Result<WaveUser>>` — see auth_repository_impl.dart, where every
+  /// sign-in path already returns `Success(user)` or `Err(AuthFailure(...))`.
+  /// `dynamic` here meant `.fold()` below was an unchecked dynamic call: a
+  /// rename of `fold`, or a future change to `Result` that split it into a
+  /// different shape, would not have failed until this code actually ran with
+  /// a live sign-in attempt — not at compile time, and not in a unit test that
+  /// mocks the repository with something shaped closely enough to satisfy
+  /// `dynamic` but not `Result<WaveUser>`.
   void _handleSignInResult(
-    dynamic result,
+    Result<WaveUser> result,
     Emitter<AuthState> emit,
     String method,
   ) {
     result.fold(
       (Failure f) => emit(state.copyWith(isBusy: false, failure: f)),
       (WaveUser user) {
-        _analytics.log(
-          AnalyticsEvents.signUpCompleted,
-          params: {AnalyticsParams.source: method},
+        unawaited(
+          _analytics.log(
+            AnalyticsEvents.signUpCompleted,
+            params: {AnalyticsParams.source: method},
+          ),
         );
         // No status emit — the auth stream delivers it.
       },
@@ -228,8 +264,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(state.copyWith(isBusy: true, clearFailure: true));
-    final result = await _repo.continueAsGuest();
-    result.fold(
+    (await _repo.continueAsGuest()).fold(
       (f) => emit(state.copyWith(isBusy: false, failure: f)),
       (_) {},
     );
@@ -247,10 +282,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
 
-    _analytics.log(AnalyticsEvents.otpRequested);
-    final result = await _repo.sendOtp(e.phoneNumber);
-
-    result.fold(
+    unawaited(_analytics.log(AnalyticsEvents.otpRequested));
+    
+    (await _repo.sendOtp(e.phoneNumber)).fold(
       (f) => emit(
         state.copyWith(otpStage: OtpStage.idle, isBusy: false, failure: f),
       ),
@@ -289,17 +323,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
 
-    final result = e.linkToExisting
-        ? await _repo.linkPhoneToCurrentUser(
-            verificationId: verificationId,
-            smsCode: e.smsCode,
-          )
-        : await _repo.verifyOtp(
-            verificationId: verificationId,
-            smsCode: e.smsCode,
-          );
-
-    result.fold(
+    (e.linkToExisting
+            ? await _repo.linkPhoneToCurrentUser(
+                verificationId: verificationId,
+                smsCode: e.smsCode,
+              )
+            : await _repo.verifyOtp(
+                verificationId: verificationId,
+                smsCode: e.smsCode,
+              ))
+        .fold(
       (f) => emit(
         // Back to awaitingCode, not idle: a wrong code should leave the user on
         // the code field with the error, not send them back to re-enter their
@@ -311,7 +344,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       ),
       (user) {
-        _analytics.log(AnalyticsEvents.otpVerificationCompleted);
+        unawaited(_analytics.log(AnalyticsEvents.otpVerificationCompleted));
         emit(
           state.copyWith(
             otpStage: OtpStage.verified,
@@ -343,7 +376,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   @override
   Future<void> close() {
-    _sub?.cancel();
+    unawaited(_sub?.cancel());
     return super.close();
   }
 }

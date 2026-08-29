@@ -85,17 +85,30 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
       );
     }
 
-    // Both requests in parallel: they are independent, and serialising them
-    // doubles the time to a complete page for no reason.
-    final results = await Future.wait([
-      _products.byId(e.productId),
-      _reviews.forProduct(e.productId),
-      _reviews.summaryForProduct(e.productId),
-    ]);
+    // Still fired in parallel — the three calls are independent and
+    // serialising them doubles the time to a complete page for no reason —
+    // but no longer through Future.wait over a single List.
+    //
+    // Future.wait<T> needs one T for the whole list, and the three calls
+    // here return three DIFFERENT Result<T> specialisations
+    // (Result<Product>, Result<List<Review>>, Result<RatingSummary>). The
+    // only common type Dart could infer across them was Future<Object>,
+    // which meant every element read back out of `results` was `dynamic` in
+    // practice — `results[0] as dynamic` said so explicitly — and every
+    // `.fold()` call three lines below was an unchecked dynamic call the
+    // analyzer could not verify against any of the three actual Result
+    // shapes.
+    //
+    // Starting each Future without awaiting, then awaiting all three,
+    // achieves the same overlap with each variable carrying its own real
+    // type from the point it is created.
+    final productFuture = _products.byId(e.productId);
+    final reviewsFuture = _reviews.forProduct(e.productId);
+    final summaryFuture = _reviews.summaryForProduct(e.productId);
 
-    final productResult = results[0] as dynamic;
-    final reviewsResult = results[1] as dynamic;
-    final summaryResult = results[2] as dynamic;
+    final productResult = await productFuture;
+    final reviewsResult = await reviewsFuture;
+    final summaryResult = await summaryFuture;
 
     productResult.fold(
       (Failure f) {

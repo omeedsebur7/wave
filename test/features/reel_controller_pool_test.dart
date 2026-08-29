@@ -32,8 +32,15 @@ class _FakePlayer implements PooledPlayer {
     _initialized = true;
   }
 
+  // Named, not positional — matches PooledPlayer.setLooping's signature in
+  // reel_controller_pool.dart, which moved to a named `looping` parameter
+  // (avoid_positional_boolean_parameters: PooledPlayer is our own interface,
+  // unlike VideoPlayerController.setLooping, so there was no external
+  // contract stopping the fix). This override has to match exactly or the
+  // analyzer reports invalid_override, which is what sent this file back
+  // for a one-line change.
   @override
-  Future<void> setLooping(bool looping) async {}
+  Future<void> setLooping({required bool looping}) async {}
 
   @override
   Future<void> play() async => playing = true;

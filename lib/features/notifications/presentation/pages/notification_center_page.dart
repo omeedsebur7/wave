@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wave/app/di/injector.dart';
@@ -27,7 +29,16 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     }
     if (!mounted) return;
     if (notification.deepLink != null) {
-      context.push(notification.deepLink!);
+      // context.push returns Future<T?> — the value popped when the pushed
+      // route eventually closes. Nothing here waits for that, or has any use
+      // for it: _open's own job is done the moment navigation is requested.
+      // unawaited() marks that as the intended shape rather than an omission
+      // — a bare, unawaited Future is otherwise indistinguishable from one
+      // someone forgot to await, and forgetting matters here because an
+      // unhandled error on an awaited navigation Future would normally
+      // surface through this method's caller; unawaited makes clear that
+      // was never the design.
+      unawaited(context.push(notification.deepLink!));
     }
   }
 

@@ -15,7 +15,16 @@ import 'package:wave/core/services/bunny_stream_service.dart';
 abstract class PooledPlayer {
   bool get isInitialized;
   Future<void> initialize();
-  Future<void> setLooping(bool looping);
+
+  /// Named, not positional — this is our own abstraction, unlike
+  /// VideoPlayerController.setLooping (positional, video_player's own API),
+  /// so unlike OsmConfig.onPositionChanged there is no external contract
+  /// forcing this shape. `player.setLooping(true)` at the one call site read
+  /// exactly like `player.pause(true)` would — a bare boolean with no label
+  /// at the point that matters, the place someone is reading unfamiliar code
+  /// trying to work out what it does.
+  Future<void> setLooping({required bool looping});
+
   Future<void> play();
   Future<void> pause();
   Future<void> dispose();
@@ -34,7 +43,8 @@ class VideoPlayerPooledPlayer implements PooledPlayer {
   Future<void> initialize() => controller.initialize();
 
   @override
-  Future<void> setLooping(bool looping) => controller.setLooping(looping);
+  Future<void> setLooping({required bool looping}) =>
+      controller.setLooping(looping);
 
   @override
   Future<void> play() => controller.play();
@@ -207,7 +217,7 @@ class ReelControllerPool {
 
       player = _playerFactory(url);
       await player.initialize();
-      await player.setLooping(true);
+      await player.setLooping(looping: true);
 
       // And once more, because initialize() is itself a long await.
       if (_disposed || !_wanted.contains(reelId)) {
@@ -238,7 +248,8 @@ class ReelControllerPool {
       await player?.dispose();
       return null;
     } finally {
-      _initialising.remove(reelId);
+      // Map.remove on a Map<String, Future> returns a Future, which triggers unawaited_futures.
+      unawaited(_initialising.remove(reelId));
     }
   }
 

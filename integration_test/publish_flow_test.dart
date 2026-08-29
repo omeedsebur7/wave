@@ -134,8 +134,7 @@ void main() {
       expect(await seed.reelCountFor(sellerId), 1);
     });
 
-    testWidgets('a failed encode is reported as failed, not as ready',
-        (tester) async {
+    testWidgets('a failed encode cannot be published', (tester) async {
       final sellerId = await seed.signInAsSeller();
       await bunny.failNextEncode();
 
@@ -149,37 +148,96 @@ void main() {
       expect(status.failed, isTrue);
       expect(status.ready, isFalse);
 
-      // Nothing published, because nothing tried to.
+      // THE ASSERTION THIS TEST EXISTS FOR — and it only became possible
+      // once publishReel was fixed to actually check.
+      //
+      // Until then, publishReel verified the pending_uploads ownership record
+      // and NOTHING else. Its own doc comment claimed it "writes the Reel
+      // document once the video is genuinely playable", but that guarantee
+      // lived entirely in the client, which polls bunnyVideoStatus and only
+      // publishes on ready. A client bug, a race between the poll and the
+      // call, or a modified client bypassed it completely: this exact call,
+      // on this exact failed video, used to SUCCEED and write a Reel the feed
+      // could never play.
+      //
+      // The earlier version of this test could only assert that the STATUS
+      // ENDPOINT reported failure correctly — the two expects above. The real
+      // gap was left as a comment carrying this assertion verbatim, because a
+      // failing test nobody can fix from this file alone just gets skipped.
+      // publishReel now fetches Bunny's status directly and refuses anything
+      // that is not status 4.
+      await expectLater(
+        seed.publishReel(bunnyVideoId: videoId, durationSeconds: 30),
+        throwsA(predicate((e) => '$e'.contains('failed-precondition'))),
+        reason: 'publishReel must refuse a video whose encode failed, on the '
+            'server, rather than trusting that the client only ever calls it '
+            'after a successful poll',
+      );
+
+      // Nothing was written. The refusal has to be complete, not partial —
+      // a Reel document that exists in any state for an unplayable video is
+      // the bug this whole test guards.
+      expect(await seed.reelCountFor(sellerId), 0);
+    });
+
+    testWidgets('a still-encoding video cannot be published either', (
+      tester,
+    ) async {
+      // The other half of the same check, and the likelier one in practice: a
+      // video that has NOT failed, is simply not finished yet. A client that
+      // publishes optimistically — or one whose poll raced the encode — hits
+      // this path far more often than a genuine encode failure.
+      //
+      // Bunny reports these differently (status 2 = encoding, 5 = failed) but
+      // publishReel treats both the same way, because `status !== 4` is the
+      // only question that matters at the moment of writing a Reel.
+      final sellerId = await seed.signInAsSeller();
+
+      final videoId = await requestSlot();
+
+      // Deliberately NOT calling bunny.upload() — no bytes, no uploadedAt, no
+      // encode clock running at all. The stub's own statusOf() returns
+      // STATUS.CREATED (0) for a video with uploadedAt == null, unconditionally,
+      // with no dependency on wall-clock timing.
+      //
+      // The first version of this test called upload() and then read status
+      // WITHOUT waiting out encodeMs, on the theory that a network round trip
+      // was fast enough to land reliably inside the encode window. It was not:
+      // asserting client-side status, then making a SEPARATE server-side call
+      // that does its own fetch to the stub, is two independent reads of one
+      // clock from two different processes — and at encodeMs of 1500ms, the
+      // gap between them was occasionally enough to cross the threshold. The
+      // test failed maybe one run in several, which is worse than failing
+      // every time: it reads as flaky infrastructure rather than as what it
+      // actually was, a race condition in the TEST rather than in the code
+      // under test.
+      final status = await bunny.status(videoId);
+      expect(
+        status.ready,
+        isFalse,
+        reason: 'precondition: the video must not be ready here, or this '
+            'test is not exercising the path it claims to',
+      );
+      expect(status.failed, isFalse);
+
+      await expectLater(
+        seed.publishReel(bunnyVideoId: videoId, durationSeconds: 30),
+        throwsA(predicate((e) => '$e'.contains('failed-precondition'))),
+      );
+
       expect(await seed.reelCountFor(sellerId), 0);
 
-      // ── A GAP WORTH KNOWING ABOUT ───────────────────────────────────────
-      //
-      // publishReel does NOT check the encode result. It verifies the
-      // pending_uploads ownership record and nothing else — so calling it here,
-      // on a video the stub reports as FAILED, would succeed and write a Reel
-      // the feed can never play.
-      //
-      // Its own doc comment says it "writes the Reel document once the video is
-      // genuinely playable". That guarantee currently lives entirely in the
-      // client, which polls bunnyVideoStatus and only publishes on ready. A
-      // client bug, or a modified client, bypasses it.
-      //
-      // The old version of this test asserted `reelCountFor == 0` after only
-      // touching the fake, so it passed for the same reason a no-op would: it
-      // never published anything either way.
-      //
-      // The server-side fix is small — in publishReel, after the ownership
-      // check, GET the video status and refuse unless status == 4. Once that
-      // exists, this test should end with:
-      //
-      //   await expectLater(
-      //     seed.publishReel(bunnyVideoId: videoId, durationSeconds: 30),
-      //     throwsA(predicate((e) => '$e'.contains('failed-precondition'))),
-      //   );
-      //   expect(await seed.reelCountFor(sellerId), 0);
-      //
-      // Left as a comment rather than a red test: it is a real gap, but a
-      // failing test nobody can fix from this file just gets skipped.
+      // And once upload actually happens and encoding genuinely finishes, the
+      // same call succeeds — proving the refusal above was about readiness
+      // and not about something incidental to this upload. Without this, a
+      // publishReel that rejected everything would pass both assertions
+      // above.
+      await bunny.upload(videoId);
+      await Future<void>.delayed(
+        const Duration(milliseconds: encodeMs + 300),
+      );
+      await seed.publishReel(bunnyVideoId: videoId, durationSeconds: 30);
+      expect(await seed.reelCountFor(sellerId), 1);
     });
 
     testWidgets('caption_lower is written, or search will never find it',

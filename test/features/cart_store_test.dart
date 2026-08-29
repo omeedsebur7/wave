@@ -100,8 +100,13 @@ void main() {
     test('a bad entry cannot fail twice', () async {
       SharedPreferences.setMockInitialValues({'cart_v1': '{"lines":'});
       final prefs = await SharedPreferences.getInstance();
-      final s = CartStore(prefs);
-      s.load();
+      CartStore(prefs).load();
+      
+      // Removed the unnecessary cascade that was causing the analyzer warning
+      
+
+
+      
       expect(prefs.getString('cart_v1'), isNull);
     });
 

@@ -507,6 +507,59 @@ class TestSeed {
     return _adminCollectionCount('orders');
   }
 
+  /// The uid of whoever is signed in right now, or null.
+  ///
+  /// Exists so a test can ASSERT on the active identity rather than infer it
+  /// from the order of the lines above. Every seedSeller / signInAsSeller /
+  /// signInReadyBuyer call replaces the session, and FirebaseAuth's session
+  /// survives across tests within one file — setUp rebuilds TestSeed but does
+  /// not sign anyone out. A test that assumes the wrong identity fails with
+  /// `permission-denied`, which is indistinguishable from a genuine rules
+  /// bug until someone checks.
+  String? get currentUid => _auth.currentUser?.uid;
+
+  /// An order's status read through emulator REST, bypassing Security Rules.
+  ///
+  /// Necessary because `order()` is a CLIENT read, and the orders read rule
+  /// requires buyer_id or seller_id to match request.auth.uid. A test that
+  /// signs in as an unauthorised third party — the whole point of an
+  /// abuse test — cannot then use order() to verify nothing changed: that
+  /// read is refused by a DIFFERENT rule than the one under test, and the
+  /// failure looks like the tested rule let something through.
+  ///
+  /// Use ONLY for verification in tests where the active identity is
+  /// deliberately unauthorised. Anywhere the signed-in user legitimately owns
+  /// the order, order() is the better choice because it exercises the read
+  /// rule too.
+  Future<String?> adminOrderStatus(String orderId) async {
+    _requireEmulator();
+
+    final projectId = Firebase.app().options.projectId;
+
+    final response = await http.get(
+      Uri.parse(_documentsUrl(projectId, 'orders/$orderId')),
+      headers: const {'Authorization': 'Bearer owner'},
+    );
+
+    if (response.statusCode >= 300) {
+      throw StateError(
+        'Failed to read order "$orderId" via admin REST: '
+        '${response.statusCode} ${response.body}',
+      );
+    }
+
+    final body = jsonDecode(response.body);
+    if (body is! Map<String, dynamic>) return null;
+
+    final fields = body['fields'];
+    if (fields is! Map<String, dynamic>) return null;
+
+    final status = fields['status'];
+    if (status is! Map<String, dynamic>) return null;
+
+    return status['stringValue'] as String?;
+  }
+
   Future<int> stockOf(String productId) async {
     final snapshot = await _db
         .collection('products')
@@ -671,6 +724,39 @@ class TestSeed {
     });
 
     return result.data['reelId'] as String;
+  }
+
+  // ---------------------------------------------------------------------------
+  // RAW CLIENT WRITES — for security/abuse testing only
+  // ---------------------------------------------------------------------------
+  //
+  // Every write helper above either goes through a real repository method (so
+  // it can only ever send what the app itself would send) or through the
+  // emulator's admin REST bypass (so it never touches Security Rules at all).
+  // Neither can do what an abuse test needs: send a value the app's own UI
+  // would never construct, AS THE CURRENTLY SIGNED-IN CLIENT, and confirm the
+  // RULE — not the app's own honesty — is what stops it.
+  //
+  // These two methods are that gap. Deliberately named to be impossible to
+  // mistake for a fixture helper: reaching for `clientSet` while seeding data
+  // is almost always the wrong call, and a reviewer seeing one outside
+  // *_abuse_test.dart should ask why.
+
+  /// Writes [data] to [path] as the currently signed-in user, via the normal
+  /// client SDK — fully subject to Security Rules. Use to attempt a write the
+  /// app's UI would never send, and assert it is refused.
+  Future<void> clientSet(
+    String path, {
+    required Map<String, dynamic> data,
+    bool merge = false,
+  }) {
+    return _db.doc(path).set(data, SetOptions(merge: merge));
+  }
+
+  /// Same contract as [clientSet], for a partial update against an existing
+  /// document rather than a full write.
+  Future<void> clientUpdate(String path, Map<String, dynamic> data) {
+    return _db.doc(path).update(data);
   }
 
   // ---------------------------------------------------------------------------

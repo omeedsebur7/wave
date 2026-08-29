@@ -10,96 +10,84 @@ environment:
 # NOTE: versions below are a starting point. Per §6 of the brief, confirm the
 # current published versions (especially video_player / chewie / firebase_*)
 # before locking dependencies. Run `flutter pub upgrade --major-versions`.
+#
+# Alphabetised (sort_pub_dependencies) rather than grouped under headers like
+# "# Firebase" / "# Auth providers" as before. A first attempt at preserving
+# those groupings as trailing comments introduced exactly the kind of
+# ordering mistake this fix exists to catch — bloc/flutter_bloc left out of
+# place, cloud_functions before cloud_firestore. Plain alphabetical order,
+# checked against Python's sorted() before this file was written rather than
+# eyeballed, is less to get wrong.
 dependencies:
-  flutter:
-    sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-
-  # Firebase
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
+  bloc: ^9.0.0
+  cached_network_image: ^3.4.1
+  chewie: ^1.8.5
   cloud_firestore: ^5.4.3
-  firebase_storage: ^12.3.2
-  firebase_messaging: ^15.1.3
+  cloud_functions: ^5.1.3
+  connectivity_plus: ^6.0.5
+  dartz: ^0.10.1
+  equatable: ^2.0.5
   firebase_analytics: ^11.3.3
+  firebase_app_check: ^0.3.1+3
+  firebase_auth: ^5.3.1
+  firebase_core: ^3.6.0
   firebase_crashlytics: ^4.1.3
+  firebase_messaging: ^15.1.3
   firebase_performance: ^0.10.0+8
   firebase_remote_config: ^5.1.3
-  firebase_app_check: ^0.3.1+3
-  cloud_functions: ^5.1.3
-
-  # Auth providers
-  google_sign_in: ^6.2.1
-  sign_in_with_apple: ^6.1.2
-
-  # State management + DI
+  firebase_storage: ^12.3.2
+  flutter:
+    sdk: flutter
   flutter_bloc: ^9.1.1
-  bloc: ^9.0.0
-  get_it: ^8.0.0
-  injectable: ^3.0.0
-
-  # Models
-  freezed_annotation: ^3.1.0
-  json_annotation: ^4.12.0
-  equatable: ^2.0.5
-
-  # Navigation
-  go_router: ^14.3.0
-
-  # Video (Bunny Stream is consumed as a plain HLS URL — no Bunny SDK needed)
-  video_player: ^2.9.2
-  chewie: ^1.8.5
-
-  # Media / caching
-  cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
-  image_picker: ^1.1.2
-  video_compress: ^3.1.3
-
-  # Platform / utils
-  connectivity_plus: ^6.0.5
-  http: ^1.2.2
+  flutter_localizations:
+    sdk: flutter
+  flutter_map: ^7.0.2
+  flutter_native_splash: any
   flutter_secure_storage: ^9.2.2
+  freezed_annotation: ^3.1.0
+  geolocator: ^13.0.1
+  get_it: ^8.0.0
+  go_router: ^14.3.0
+  google_sign_in: ^6.2.1
+  http: ^1.2.2
+  image_picker: ^1.1.2
+  injectable: ^3.0.0
   intl: ^0.20.2
-  pdf: ^3.11.1
-  printing: ^5.13.2
+  json_annotation: ^4.12.0
+  latlong2: ^0.9.1
+  logger: ^2.4.0
   package_info_plus: ^8.0.2
   path_provider: ^2.1.4
+  pdf: ^3.11.1
+  printing: ^5.13.2
   share_plus: ^10.0.2
   shared_preferences: ^2.3.2
+  sign_in_with_apple: ^6.1.2
   url_launcher: ^6.3.1
-
-  # Maps. OpenStreetMap tiles via flutter_map — no API key, no per-map-load
-  # billing, and the data is ODbL rather than a proprietary licence. See
-  # OsmConfig for the tile-hosting decision that has to be made before launch.
-  flutter_map: ^7.0.2
-  latlong2: ^0.9.1
-  geolocator: ^13.0.1
   uuid: ^4.5.1
-  dartz: ^0.10.1
-  logger: ^2.4.0
+  video_compress: ^3.1.3
+  video_player: ^2.9.2
 
   # P2 — intentionally NOT added yet (see §3.6):
   # model_viewer_plus: for the live .glb/.gltf product viewer
   # local_auth:        for biometric login
 
-  flutter_native_splash: any
 dev_dependencies:
+  bloc_test: ^10.0.0
+  build_runner: ^2.15.1
+  fake_cloud_firestore: ^3.0.3
   flutter_launcher_icons: ^0.14.1
   flutter_test:
     sdk: flutter
+  freezed: ^3.2.5
+  golden_toolkit: ^0.15.0
+  injectable_generator: ^3.0.2
   integration_test:
     sdk: flutter
-  build_runner: ^2.15.1
-  freezed: ^3.2.5
   json_serializable: ^6.8.0
-  injectable_generator: ^3.0.2
-  bloc_test: ^10.0.0
   mocktail: ^1.0.4
-  golden_toolkit: ^0.15.0
   very_good_analysis: ^6.0.0
-  fake_cloud_firestore: ^3.0.3
 
 flutter:
   uses-material-design: true
@@ -133,8 +121,8 @@ flutter:
 #     dart run flutter_launcher_icons
 #
 # Three images rather than one, because each platform crops differently:
-#   icon.png             opaque, 78% occupancy — iOS rejects alpha in app icons
-#   icon_foreground.png  transparent, 55%      — Android masks to a 66% circle
+#   icon.png            opaque, 78% occupancy — iOS rejects alpha in app icons
+#   icon_foreground.png transparent, 55%      — Android masks to a 66% circle
 #   background is flat black, which is the artwork's own ground
 #
 # The source art fills 84% of its frame. Shipping that straight to an adaptive

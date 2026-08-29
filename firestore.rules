@@ -447,10 +447,50 @@ service cloud.firestore {
 
     // ─── Rate limits ──────────────────────────────────────────────────────
 
+    // CREATE AND UPDATE CARRY THE SAME CONSTRAINTS, and that symmetry is the
+    // whole point of this block.
+    //
+    // `allow create` used to be `isSelf(userId)` and nothing else. Firestore
+    // does not share constraints between create and update — an `allow
+    // update` clause has no effect whatsoever on a first write — so a
+    // brand-new account could `set()` this document with a last_report_at
+    // dated to the year 2000 and cooledDown() would compute a gap of two
+    // decades on every subsequent check. Reports, comments and follows all
+    // lost their per-user throttle permanently, from the account's very
+    // first write, and nothing downstream would ever notice because the
+    // document looked structurally fine.
+    //
+    // Confirmed by integration_test/rate_limit_backdating_test.dart, which
+    // found all three fields exploitable and additionally found that create
+    // accepted arbitrary field NAMES — the rule constrained identity only,
+    // never shape.
+    //
+    // The constraints below are duplicated rather than factored into a helper
+    // because a rules function returning a boolean cannot be applied to two
+    // different `allow` clauses without obscuring which one is being read at
+    // a glance, and this is exactly the block where a reader needs to see
+    // that create and update say the same thing.
     match /rate_limits/{userId} {
       allow read: if isSelf(userId);
 
-      allow create: if isSelf(userId);
+      allow create: if isSelf(userId)
+        && request.resource.data.keys().hasOnly([
+          'last_comment_at',
+          'last_follow_at',
+          'last_report_at'
+        ])
+        && (
+          !('last_comment_at' in request.resource.data)
+          || request.resource.data.last_comment_at == request.time
+        )
+        && (
+          !('last_follow_at' in request.resource.data)
+          || request.resource.data.last_follow_at == request.time
+        )
+        && (
+          !('last_report_at' in request.resource.data)
+          || request.resource.data.last_report_at == request.time
+        );
 
       allow update: if isSelf(userId)
         && request.resource.data.keys().hasOnly([

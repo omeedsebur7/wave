@@ -341,10 +341,20 @@ class _DevWarning extends StatelessWidget {
     // Release builds strip this: `assert` runs only in debug, so the branch
     // folds away and the warning cannot leak into a store build.
     var visible = false;
-    assert(() {
-      visible = true;
-      return true;
-    }());
+    assert(
+      () {
+        visible = true;
+        return true;
+      }(),
+      // The message is never shown — this assert can never actually FAIL,
+      // since the closure always returns true; its only job is to run
+      // debug-only code via assert's short-circuiting. prefer_asserts_with_
+      // message still wants a string, so this one documents what the assert
+      // is really for rather than describing a failure condition that does
+      // not exist.
+      'debug-only: flips `visible` so this dev warning renders in debug '
+      'builds and is compiled out of release ones',
+    );
     if (!visible) return const SizedBox.shrink();
 
     return Container(

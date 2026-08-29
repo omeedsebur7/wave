@@ -120,14 +120,18 @@ class ModerationRepository {
         .snapshots()
         .map((snap) {
       final reports = [for (final d in snap.docs) _toReport(d)];
-      reports.sort((a, b) {
-        if (a.isUrgent != b.isUrgent) return a.isUrgent ? -1 : 1;
-        if (a.reportCount != b.reportCount) {
-          return b.reportCount.compareTo(a.reportCount);
-        }
-        return a.createdAt.compareTo(b.createdAt);
-      });
-      return reports;
+      // Cascaded rather than `reports.sort(...); return reports;` — List.sort
+      // mutates in place and returns void, so the two statements were both
+      // calls on `reports` in immediate succession purely to discard sort's
+      // (nonexistent) return value before handing the same list back.
+      return reports
+        ..sort((a, b) {
+          if (a.isUrgent != b.isUrgent) return a.isUrgent ? -1 : 1;
+          if (a.reportCount != b.reportCount) {
+            return b.reportCount.compareTo(a.reportCount);
+          }
+          return a.createdAt.compareTo(b.createdAt);
+        });
     });
   }
 

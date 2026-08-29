@@ -98,8 +98,11 @@ class _ReportSheetState extends State<_ReportSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline,
-                size: 48, color: context.waveColors.success,),
+            Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: context.waveColors.success,
+            ),
             const SizedBox(height: 16),
             Text(context.l10n.reportSent, style: context.texts.titleMedium),
             const SizedBox(height: 8),
@@ -133,18 +136,26 @@ class _ReportSheetState extends State<_ReportSheet> {
 
           Flexible(
             child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  for (final reason in ReportReason.values)
-                    RadioListTile<ReportReason>(
-                      value: reason,
-                      groupValue: _reason,
-                      onChanged: (v) => setState(() => _reason = v),
-                      title: Text(_reasonLabel(context, reason),
-                          style: context.texts.bodyMedium,),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                ],
+              // RadioGroup replaces the per-tile groupValue/onChanged pair
+              // deprecated after Flutter 3.32. The selection state and the
+              // callback move up here; each tile below now declares only its
+              // own value.
+              child: RadioGroup<ReportReason>(
+                groupValue: _reason,
+                onChanged: (v) => setState(() => _reason = v),
+                child: Column(
+                  children: [
+                    for (final reason in ReportReason.values)
+                      RadioListTile<ReportReason>(
+                        value: reason,
+                        title: Text(
+                          _reasonLabel(context, reason),
+                          style: context.texts.bodyMedium,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -153,10 +164,14 @@ class _ReportSheetState extends State<_ReportSheet> {
             CheckboxListTile(
               value: _alsoBlock,
               onChanged: (v) => setState(() => _alsoBlock = v ?? false),
-              title: Text(context.l10n.alsoBlockAccount,
-                  style: context.texts.bodyMedium,),
-              subtitle: Text(context.l10n.blockExplainer,
-                  style: context.texts.bodySmall,),
+              title: Text(
+                context.l10n.alsoBlockAccount,
+                style: context.texts.bodyMedium,
+              ),
+              subtitle: Text(
+                context.l10n.blockExplainer,
+                style: context.texts.bodySmall,
+              ),
               contentPadding: EdgeInsets.zero,
             ),
 

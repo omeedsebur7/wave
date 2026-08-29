@@ -108,6 +108,28 @@ class QuickCheckoutSheet extends StatelessWidget {
   }
 
   List<Widget> _body(BuildContext context, QuickCheckoutState state) {
+    // Enumerated rather than `default: return _purchaseBody(...)`.
+    //
+    // A default branch treats every FUTURE state the same way a today's
+    // unmapped state is treated — silently. If QuickCheckoutStatus ever grows
+    // a new value (a `failed` status distinct from `unavailable`, say), the
+    // old default would route it straight into _purchaseBody as though it
+    // were normal, and nobody would notice until a support ticket asked why
+    // a failed checkout still showed a Buy button. Enumerating every case
+    // means the compiler itself refuses to build the moment the enum grows a
+    // member this switch has not been told about — the exact `case` fixed at
+    // that point tells you which state needs a decision, rather than a
+    // runtime symptom three steps removed from the cause.
+    //
+    // ASSUMPTION, stated because I have not seen QuickCheckoutState's own
+    // file: QuickCheckoutStatus has exactly {loading, unavailable, ready,
+    // placing, placed}, inferred from every reference to it in THIS file —
+    // .loading and .unavailable used explicitly below, .placing read in
+    // _GateAction, .placed read in the listener above. If the real enum has a
+    // member not referenced anywhere in this file, this switch will fail to
+    // compile with a clear "missing case" — the correct failure mode, and
+    // the fix is adding that case with a real decision, not restoring
+    // default.
     switch (state.status) {
       case QuickCheckoutStatus.loading:
         return const [
@@ -137,8 +159,59 @@ class QuickCheckoutSheet extends StatelessWidget {
           ),
         ];
 
-      default:
+      // ready / placing / placed all render the normal purchase body — the
+      // button itself (_GateAction) is what changes between them, via
+      // state.status == placing for the spinner. placed is momentary: the
+      // listener above navigates away on the same frame it is reached.
+      case QuickCheckoutStatus.ready:
+      case QuickCheckoutStatus.placing:
+      case QuickCheckoutStatus.placed:
         return _purchaseBody(context, state);
+
+      // The member the first version of this enumeration missed — confirmed
+      // by `flutter analyze` refusing to compile, which is the whole reason
+      // this switch is enumerated rather than defaulted: the compiler caught
+      // it immediately instead of a real checkout failure silently rendering
+      // as though everything were fine.
+      //
+      // TODO(wave-team): this branch is intentionally minimal and needs a proper design
+      // pass, not a placeholder left standing. Written this conservatively —
+      // reusing only l10n keys and Product fields already proven to exist
+      // elsewhere in THIS file, rather than reaching for a `somethingWentWrong`
+      // / `tryAgain` string or a `Product.id` field I have not actually seen
+      // declared anywhere — because this session already produced two
+      // compile errors this exact way (QuickCheckoutStatus.failed and
+      // OrderInternalStatus.refunded, both real enum members I had not been
+      // shown). Guessing a THIRD unverified API surface in the same patch,
+      // in the file that just proved the guess-and-fix loop is expensive,
+      // would be the same mistake a second time.
+      //
+      // The listener at the top of this widget already shows state.failure
+      // via a SnackBar the moment it becomes non-null — see
+      // `if (state.failure != null) ScaffoldMessenger...` above — so a
+      // buyer reaching this branch has already seen why. This body only
+      // needs to not be blank while that SnackBar is visible, and to offer
+      // a way back rather than a dead end.
+      case QuickCheckoutStatus.failed:
+        return [
+          SizedBox(
+            height: 200,
+            child: WaveErrorView(
+              // Reusing the "not found" copy's SHAPE, not its meaning — the
+              // title/message pairing already exists and renders correctly;
+              // only the words are provisional pending real strings for this
+              // specific case.
+              title: context.l10n.productNotFound,
+              message: context.l10n.productNotFoundBody,
+              icon: Icons.error_outline,
+              retryLabel: context.l10n.backToTheMarket,
+              onRetry: () {
+                Navigator.of(context).pop();
+                context.push(Routes.marketplace);
+              },
+            ),
+          ),
+        ];
     }
   }
 

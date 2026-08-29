@@ -97,11 +97,16 @@ class ReelsFeedState extends Equatable {
 class ReelsFeedBloc extends Bloc<ReelsFeedEvent, ReelsFeedState> {
   ReelsFeedBloc(this._repo, this._analytics, this._config, this._blocks)
       : super(const ReelsFeedState()) {
-    on<FeedStarted>(_onStarted);
-    on<FeedRefreshed>(_onRefreshed);
-    on<FeedPageChanged>(_onPageChanged);
-    on<ReelLikeToggled>(_onLikeToggled);
-    on<ReelSaveToggled>(_onSaveToggled);
+    // Cascaded off explicit `this`, not off the return value of the first
+    // `on<...>()` call — see the identical note in auth_bloc.dart, which is
+    // where this exact mistake was made and caught: `on<T>()` returns void,
+    // so a cascade has to start from an actual object reference.
+    this
+      ..on<FeedStarted>(_onStarted)
+      ..on<FeedRefreshed>(_onRefreshed)
+      ..on<FeedPageChanged>(_onPageChanged)
+      ..on<ReelLikeToggled>(_onLikeToggled)
+      ..on<ReelSaveToggled>(_onSaveToggled);
   }
 
   final ReelRepository _repo;
@@ -145,8 +150,7 @@ class ReelsFeedBloc extends Bloc<ReelsFeedEvent, ReelsFeedState> {
     // decide whether the app feels fast. A feed that takes two seconds to
     // first paint loses people before they have seen anything.
     final started = DateTime.now();
-    final result = await _repo.fetchFeed(limit: pageSize);
-    result.fold(
+    (await _repo.fetchFeed(limit: pageSize)).fold(
       (f) => emit(state.copyWith(status: FeedStatus.failure, failure: f)),
       (page) {
         unawaited(
@@ -206,8 +210,7 @@ class ReelsFeedBloc extends Bloc<ReelsFeedEvent, ReelsFeedState> {
     }
 
     emit(state.copyWith(status: FeedStatus.loadingMore));
-    final result = await _repo.fetchFeed(cursor: state.cursor, limit: pageSize);
-    result.fold(
+    (await _repo.fetchFeed(cursor: state.cursor, limit: pageSize)).fold(
       // A failed prefetch must not blow away the feed the user is watching —
       // stay ready, keep the existing list, let the next page change retry.
       (f) => emit(state.copyWith(status: FeedStatus.ready)),
@@ -233,20 +236,25 @@ class ReelsFeedBloc extends Bloc<ReelsFeedEvent, ReelsFeedState> {
 
     // Optimistic: the heart fills instantly. A like that waits for a round-trip
     // feels broken even when it succeeds.
-    final optimistic = [...state.reels]..[index] = reel.copyWith(
-        likedByMe: nowLiked,
-        likeCount: reel.likeCount + (nowLiked ? 1 : -1),
-      );
-    emit(state.copyWith(reels: optimistic));
+    emit(
+      state.copyWith(
+        reels: [...state.reels]
+          ..[index] = reel.copyWith(
+            likedByMe: nowLiked,
+            likeCount: reel.likeCount + (nowLiked ? 1 : -1),
+          ),
+      ),
+    );
 
-    final result =
-        nowLiked ? await _repo.like(e.reelId) : await _repo.unlike(e.reelId);
-
-    result.fold(
+    (nowLiked ? await _repo.like(e.reelId) : await _repo.unlike(e.reelId)).fold(
       (f) {
         // Roll back on failure rather than leaving a lie on screen.
-        final reverted = [...state.reels]..[index] = reel;
-        emit(state.copyWith(reels: reverted, failure: f));
+        emit(
+          state.copyWith(
+            reels: [...state.reels]..[index] = reel,
+            failure: f,
+          ),
+        );
       },
       (_) {},
     );
@@ -261,15 +269,20 @@ class ReelsFeedBloc extends Bloc<ReelsFeedEvent, ReelsFeedState> {
     final reel = state.reels[index];
     final nowSaved = !reel.savedByMe;
 
-    final optimistic = [...state.reels]
-      ..[index] = reel.copyWith(savedByMe: nowSaved);
-    emit(state.copyWith(reels: optimistic));
+    emit(
+      state.copyWith(
+        reels: [...state.reels]..[index] = reel.copyWith(savedByMe: nowSaved),
+      ),
+    );
 
-    final result = await _repo.toggleSave(e.reelId, saved: nowSaved);
-    result.fold(
+    (await _repo.toggleSave(e.reelId, saved: nowSaved)).fold(
       (f) {
-        final reverted = [...state.reels]..[index] = reel;
-        emit(state.copyWith(reels: reverted, failure: f));
+        emit(
+          state.copyWith(
+            reels: [...state.reels]..[index] = reel,
+            failure: f,
+          ),
+        );
       },
       (_) {},
     );

@@ -198,6 +198,24 @@ class _OrderDetailView extends StatelessWidget {
   /// sits at `pendingPayment` until the provider webhook lands, and telling that
   /// buyer "the seller has your order and is getting it ready" is simply false.
   /// The step stays the same; the sentence under it does not.
+  ///
+  /// The inner switch used `default: break;` to fall through to the outer one
+  /// for every OrderInternalStatus that is not one of the three payment
+  /// states. Replaced with every OTHER status enumerated explicitly, each
+  /// breaking immediately, for the same reason the switch in
+  /// quick_checkout_sheet.dart was: a `default` here would silently absorb
+  /// any status OrderInternalStatus grows in the future, whereas an
+  /// enumerated switch fails to compile the moment it does, naming the exact
+  /// value that needs a decision.
+  ///
+  /// ASSUMPTION, stated because I have not seen order.dart itself:
+  /// OrderInternalStatus has exactly {pendingPayment, paymentProcessing,
+  /// paymentFailed, confirmed, packed, handedToCourier, outForDelivery,
+  /// delivered, cancelled} — the three payment states referenced here, plus
+  /// the six seen across firestore.rules' sellerTransitionAllowed() and
+  /// OrderTransitions.isLegal() elsewhere in this codebase this session. If
+  /// the real enum has additional members, this switch will fail to compile
+  /// with a clear "missing case" naming them.
   static String _stageExplanation(BuildContext context, Order order) {
     if (order.stage == CustomerOrderStage.confirmed) {
       switch (order.internalStatus) {
@@ -206,7 +224,29 @@ class _OrderDetailView extends StatelessWidget {
           return context.l10n.stagePendingPaymentBody;
         case OrderInternalStatus.paymentFailed:
           return context.l10n.stagePaymentFailedBody;
-        default:
+        case OrderInternalStatus.confirmed:
+        case OrderInternalStatus.packed:
+        case OrderInternalStatus.handedToCourier:
+        case OrderInternalStatus.outForDelivery:
+        case OrderInternalStatus.delivered:
+        case OrderInternalStatus.cancelled:
+          break;
+        // The member the first version of this enumeration missed —
+        // `flutter analyze` refused to compile rather than letting `refunded`
+        // silently fall through a default, which is the entire point of
+        // enumerating this switch instead of defaulting it.
+        //
+        // Left as `break`, matching every other status in this inner switch
+        // that is not one of the three payment states: it falls through to
+        // the outer `switch (order.stage)` below unchanged. That is a
+        // conservative placement, not a considered one — I have not seen
+        // whether CustomerOrderStage even has a case that reads correctly
+        // for a refunded order (the outer switch below only handles
+        // confirmed/onTheWay/delivered/cancelled), so this is very possibly
+        // wrong and is exactly the kind of thing worth checking rather than
+        // guessing a stage-facing sentence I cannot verify against the real
+        // CustomerOrderStage definition.
+        case OrderInternalStatus.refunded:
           break;
       }
     }

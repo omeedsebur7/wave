@@ -140,158 +140,156 @@ class ReceiptService {
     final doc = pw.Document(
       title: strings.documentTitle,
       theme: await _theme(),
-    );
-
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      strings.brand,
-                      style: const pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      strings.receipt,
-                      style: const pw.TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text(
-                      strings.orderLabel,
-                      style: const pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.SizedBox(height: 2),
-                    // The reference someone actually quotes on the phone.
-                    //
-                    // _shortId was written for this and never called, so every
-                    // receipt named an order without saying WHICH order — the
-                    // one field a courier or a bank asks for. Latin digits and
-                    // letters deliberately, in all three locales: this is a
-                    // lookup key, not prose, and it has to survive being read
-                    // aloud and typed back in.
-                    pw.Text(
-                      _shortId(order.id),
-                      style: const pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      strings.orderedOnDate,
-                      style: const pw.TextStyle(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            pw.SizedBox(height: 24),
-            pw.Divider(),
-            pw.SizedBox(height: 16),
-
-            _labelled(strings.soldBy, sellerName),
-            if (buyerName != null) _labelled(strings.buyer, buyerName),
-            if (deliveryAddress != null)
-              _labelled(strings.deliveredTo, deliveryAddress),
-            _labelled(
-              strings.status,
-              strings.statusLabels[order.stage] ?? order.stage.name,
-            ),
-
-            pw.SizedBox(height: 24),
-
-            pw.Table(
-              border: pw.TableBorder.symmetric(
-                inside:
-                    const pw.BorderSide(width: 0.5, color: PdfColors.grey400),
-              ),
-              columnWidths: {
-                0: const pw.FlexColumnWidth(4),
-                1: const pw.FlexColumnWidth(),
-                2: const pw.FlexColumnWidth(2),
-                3: const pw.FlexColumnWidth(2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                  children: [
-                    _cell(strings.item, bold: true),
-                    _cell(strings.qty, bold: true, align: pw.TextAlign.center),
-                    _cell(strings.unit, bold: true, align: pw.TextAlign.right),
-                    _cell(strings.total, bold: true, align: pw.TextAlign.right),
-                  ],
-                ),
-                for (final item in order.items)
-                  pw.TableRow(
+    )..addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      _cell(item.title),
-                      _cell('${item.quantity}', align: pw.TextAlign.center),
-                      _cell(
-                        Money.format(item.unitPriceMinor, order.currency),
-                        align: pw.TextAlign.right,
+                      pw.Text(
+                        strings.brand,
+                        style: const pw.TextStyle(
+                          fontSize: 24,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
-                      _cell(
-                        Money.format(item.lineTotalMinor, order.currency),
-                        align: pw.TextAlign.right,
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        strings.receipt,
+                        style: const pw.TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
-              ],
-            ),
-
-            pw.SizedBox(height: 16),
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Row(
-                mainAxisSize: pw.MainAxisSize.min,
-                children: [
-                  pw.Text(
-                    '${strings.total}  ',
-                    style: const pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.Text(
-                    Money.format(order.totalMinor, order.currency),
-                    style: const pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        strings.orderLabel,
+                        style: const pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.SizedBox(height: 2),
+                      // The reference someone actually quotes on the phone.
+                      //
+                      // _shortId was written for this and never called, so every
+                      // receipt named an order without saying WHICH order — the
+                      // one field a courier or a bank asks for. Latin digits and
+                      // letters deliberately, in all three locales: this is a
+                      // lookup key, not prose, and it has to survive being read
+                      // aloud and typed back in.
+                      pw.Text(
+                        _shortId(order.id),
+                        style: const pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        strings.orderedOnDate,
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
 
-            pw.Spacer(),
-            pw.Divider(),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              // Says plainly what this document is and is not. A receipt that
-              // implies it is a tax invoice when it is not causes real problems
-              // for whoever tries to use it as one.
-              strings.disclaimer,
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-            ),
-          ],
+              pw.SizedBox(height: 24),
+              pw.Divider(),
+              pw.SizedBox(height: 16),
+
+              _labelled(strings.soldBy, sellerName),
+              if (buyerName != null) _labelled(strings.buyer, buyerName),
+              if (deliveryAddress != null)
+                _labelled(strings.deliveredTo, deliveryAddress),
+              _labelled(
+                strings.status,
+                strings.statusLabels[order.stage] ?? order.stage.name,
+              ),
+
+              pw.SizedBox(height: 24),
+
+              pw.Table(
+                border: pw.TableBorder.symmetric(
+                  inside:
+                      const pw.BorderSide(width: 0.5, color: PdfColors.grey400),
+                ),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(4),
+                  1: const pw.FlexColumnWidth(),
+                  2: const pw.FlexColumnWidth(2),
+                  3: const pw.FlexColumnWidth(2),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    children: [
+                      _cell(strings.item, bold: true),
+                      _cell(strings.qty, bold: true, align: pw.TextAlign.center),
+                      _cell(strings.unit, bold: true, align: pw.TextAlign.right),
+                      _cell(strings.total, bold: true, align: pw.TextAlign.right),
+                    ],
+                  ),
+                  for (final item in order.items)
+                    pw.TableRow(
+                      children: [
+                        _cell(item.title),
+                        _cell('${item.quantity}', align: pw.TextAlign.center),
+                        _cell(
+                          Money.format(item.unitPriceMinor, order.currency),
+                          align: pw.TextAlign.right,
+                        ),
+                        _cell(
+                          Money.format(item.lineTotalMinor, order.currency),
+                          align: pw.TextAlign.right,
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+
+              pw.SizedBox(height: 16),
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Row(
+                  mainAxisSize: pw.MainAxisSize.min,
+                  children: [
+                    pw.Text(
+                      '${strings.total}  ',
+                      style: const pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Text(
+                      Money.format(order.totalMinor, order.currency),
+                      style: const pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.Spacer(),
+              pw.Divider(),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                // Says plainly what this document is and is not. A receipt that
+                // implies it is a tax invoice when it is not causes real problems
+                // for whoever tries to use it as one.
+                strings.disclaimer,
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
     return doc.save();
   }

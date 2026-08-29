@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wave/core/analytics/analytics_events.dart';
 import 'package:wave/core/analytics/analytics_service.dart';
 import 'package:wave/core/error/failures.dart';
+import 'package:wave/core/error/transaction_aborted.dart';
 import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/orders/data/models/order_dto.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
@@ -84,25 +85,25 @@ class OrderRepositoryImpl implements OrderRepository {
         final snap = await tx.get(ref);
         final data = snap.data();
         if (data == null) {
-          throw const NotFoundFailure(
-            'Order not found',
-            FailureReason.orderNotFound,
+          throw const TransactionAborted(
+            NotFoundFailure('Order not found', FailureReason.orderNotFound),
           );
         }
 
         final order = OrderDto.fromJson({'id': snap.id, ...data}).toDomain();
 
         if (order.buyerId != _uid) {
-          throw const PermissionFailure(
-            'This is not your order',
-            FailureReason.notYourOrder,
+          throw const TransactionAborted(
+            PermissionFailure('This is not your order', FailureReason.notYourOrder),
           );
         }
         if (!order.canCancel) {
-          throw const ServerFailure(
-            'This order has already left for delivery and can no longer be '
-            'cancelled. Message the seller to sort it out.',
-            reason: FailureReason.orderAlreadyShipped,
+          throw const TransactionAborted(
+            ServerFailure(
+              'This order has already left for delivery and can no longer '
+              'be cancelled. Message the seller to sort it out.',
+              reason: FailureReason.orderAlreadyShipped,
+            ),
           );
         }
 
@@ -122,8 +123,8 @@ class OrderRepositoryImpl implements OrderRepository {
       );
 
       return const Success(null);
-    } on Failure catch (f) {
-      return Err(f);
+    } on TransactionAborted catch (aborted) {
+      return Err(aborted.failure);
     } on FirebaseException catch (e) {
       return Err(
         ServerFailure(

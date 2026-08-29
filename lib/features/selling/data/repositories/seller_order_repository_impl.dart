@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart'hide Order;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wave/core/error/failures.dart';
+import 'package:wave/core/error/transaction_aborted.dart';
 import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/orders/data/models/order_dto.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
@@ -70,9 +71,13 @@ class SellerOrderRepositoryImpl implements SellerOrderRepository {
         final snap = await tx.get(ref);
         final data = snap.data();
         if (data == null) {
-          throw const NotFoundFailure(
-            'Order not found',
-            FailureReason.orderNotFound,
+          // See core/error/transaction_aborted.dart for why this is wrapped
+          // rather than thrown as a bare NotFoundFailure: a Failure is a
+          // value type modelling "did not succeed", not a Dart exception, and
+          // only_throw_errors is what caught the previous version of this
+          // file throwing it directly.
+          throw const TransactionAborted(
+            NotFoundFailure('Order not found', FailureReason.orderNotFound),
           );
         }
 
@@ -82,15 +87,19 @@ class SellerOrderRepositoryImpl implements SellerOrderRepository {
         );
 
         if (current == OrderInternalStatus.cancelled) {
-          throw const ServerFailure(
-            'The buyer cancelled this order while you were updating it.',
-            reason: FailureReason.buyerCancelledOrder,
+          throw const TransactionAborted(
+            ServerFailure(
+              'The buyer cancelled this order while you were updating it.',
+              reason: FailureReason.buyerCancelledOrder,
+            ),
           );
         }
         if (!OrderTransitions.isLegal(current, to)) {
-          throw const ServerFailure(
-            'This order already moved on. Pull to refresh.',
-            reason: FailureReason.orderMovedOn,
+          throw const TransactionAborted(
+            ServerFailure(
+              'This order already moved on. Pull to refresh.',
+              reason: FailureReason.orderMovedOn,
+            ),
           );
         }
 
@@ -104,8 +113,8 @@ class SellerOrderRepositoryImpl implements SellerOrderRepository {
       });
 
       return const Success(null);
-    } on Failure catch (f) {
-      return Err(f);
+    } on TransactionAborted catch (aborted) {
+      return Err(aborted.failure);
     } on FirebaseException catch (e) {
       return Err(
         ServerFailure(

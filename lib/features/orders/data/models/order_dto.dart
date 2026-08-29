@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart'hide Order;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:wave/features/location/domain/entities/delivery_location.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
 
@@ -24,13 +24,27 @@ class OrderDto {
         buyerId: json['buyer_id'] as String? ?? '',
         sellerId: json['seller_id'] as String? ?? '',
         items: [
-          for (final i in (json['items'] as List? ?? []))
+          // Cast each element to Map<String, dynamic> BEFORE indexing it,
+          // rather than indexing a `dynamic` loop variable directly.
+          //
+          // `json['items'] as List? ?? []` is `List<dynamic>`, so the old `i`
+          // here was `dynamic` — every `i['product_id']` below it was a
+          // dynamic call the analyzer could not check, and would have stayed
+          // silent about a renamed or reshaped field until it threw at
+          // runtime, inside a widget build, several layers from this file.
+          //
+          // The cast happens once per element and fails LOUDLY with a
+          // TypeError naming the actual runtime type, right here at the
+          // deserialization boundary — not later, once whatever produced a
+          // non-map entry has already been forgotten.
+          for (final raw in (json['items'] as List? ?? const <dynamic>[]))
             OrderItem(
-              productId: i['product_id'] as String,
-              title: i['title'] as String? ?? '',
-              unitPriceMinor: (i['unit_price_minor'] as num?)?.toInt() ?? 0,
-              quantity: (i['quantity'] as num?)?.toInt() ?? 1,
-              imageUrl: i['image_url'] as String? ?? '',
+              productId: (raw as Map<String, dynamic>)['product_id'] as String,
+              title: raw['title'] as String? ?? '',
+              unitPriceMinor:
+                  (raw['unit_price_minor'] as num?)?.toInt() ?? 0,
+              quantity: (raw['quantity'] as num?)?.toInt() ?? 1,
+              imageUrl: raw['image_url'] as String? ?? '',
             ),
         ],
         totalMinor: (json['total_minor'] as num?)?.toInt() ?? 0,
