@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:injectable/injectable.dart';
+
 
 enum ConnectionQuality { offline, cellular, wifi }
 
 /// Powers connectivity-aware UI states (§6 — Offline Resilience) and the Data
 /// Saver decision for video (§6 — Bunny Stream cost control).
-@lazySingleton
+
 class ConnectivityService {
   ConnectivityService(this._connectivity) {
     _sub = _connectivity.onConnectivityChanged.listen((results) {
@@ -37,7 +37,7 @@ class ConnectivityService {
     return ConnectionQuality.offline;
   }
 
-  @disposeMethod
+  
   void dispose() {
     _sub.cancel();
     _controller.close();

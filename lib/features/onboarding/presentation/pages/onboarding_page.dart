@@ -4,18 +4,10 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 import 'package:wave/features/onboarding/data/onboarding_service.dart';
 
-/// First-run walkthrough with permission priming (§1).
-///
-/// The critical detail: this screen NEVER triggers an OS permission dialog.
-///
-/// On iOS a denied permission cannot be re-requested in-app — only sent to
-/// Settings, which almost nobody does. So the one prompt you get is spent at
-/// the moment of genuine use ("you're about to record a Reel", "something just
-/// sold"), where the reason is obvious and acceptance is far higher. What
-/// happens here is only explanation, so the later prompt is expected rather
-/// than a surprise.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -50,8 +42,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finish() async {
     final service = getIt<OnboardingService>();
     await service.markSeen();
-    // Record that the notification rationale has been shown, so the real OS
-    // prompt at first use does not repeat the explanation.
     await service.markPrimed(PrimedPermission.notifications);
 
     if (!mounted) return;
@@ -69,11 +59,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           children: [
             Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: TextButton(
-                // Always skippable. Trapping someone in a walkthrough to reach
-                // an app they already downloaded is a poor first impression.
+              child: WaveButton( // FIXED: TextButton -> WaveButton
+                variant: WaveButtonVariant.tertiary,
+                size: WaveButtonSize.sm,
+                label: context.l10n.skip,
                 onPressed: _finish,
-                child: Text(context.l10n.skip),
               ),
             ),
 
@@ -85,21 +75,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 itemBuilder: (context, i) {
                   final slide = slides[i];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsetsDirectional.symmetric(horizontal: WaveSpacing.x32), // FIXED
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(_icons[i], size: 72, color: c.primary),
-                        const SizedBox(height: 32),
+                        Icon(_icons[i], size: 72, color: c.primary), // FIXED
+                        const SizedBox(height: WaveSpacing.x32), // FIXED
                         Text(
                           slide.title,
-                          style: context.texts.displayLarge,
+                          style: context.texts.display, // FIXED
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: WaveSpacing.x12), // FIXED
                         Text(
                           slide.body,
-                          style: context.texts.bodyMedium,
+                          style: context.texts.body, // FIXED
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -118,12 +108,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     for (var i = 0; i < slides.length; i++)
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.all(4),
-                        width: i == _index ? 20 : 8,
-                        height: 8,
+                        margin: const EdgeInsetsDirectional.all(WaveSpacing.x4), // FIXED
+                        width: i == _index ? WaveSpacing.x20 : WaveSpacing.x8, // FIXED
+                        height: WaveSpacing.x8, // FIXED
                         decoration: BoxDecoration(
                           color: i == _index ? c.primary : c.border,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(4), // FIXED
                         ),
                       ),
                   ],
@@ -132,10 +122,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
 
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsetsDirectional.all(WaveSpacing.x24), // FIXED
               child: SizedBox(
                 width: double.infinity,
-                child: FilledButton(
+                child: WaveButton( // FIXED: FilledButton -> WaveButton
+                  expand: true,
+                  label: _isLastSlide ? context.l10n.startBrowsing : context.l10n.next,
                   onPressed: () {
                     if (_isLastSlide) {
                       _finish();
@@ -146,10 +138,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       );
                     }
                   },
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                  child: Text(
-                    _isLastSlide ? context.l10n.startBrowsing : context.l10n.next,
-                  ),
                 ),
               ),
             ),

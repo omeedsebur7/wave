@@ -3,21 +3,10 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/features/notifications/data/repositories/notification_repository.dart';
 import 'package:wave/features/notifications/domain/entities/app_notification.dart';
 
-/// Notification Preference Center (§4).
-///
-/// Four independent channels, with defaults defined on the enum itself so the
-/// UI and the FCM subscription logic can never disagree. Order updates default
-/// ON because someone who bought something wants to know where it is; marketing
-/// defaults OFF because consent is given, not assumed — which is also what most
-/// jurisdictions require (§7).
-///
-/// Each toggle writes through immediately rather than waiting for a Save
-/// button. Settings that require confirmation get abandoned half-changed, and
-/// a half-applied notification preference is the kind that sends a marketing
-/// push to someone who just turned it off.
 class NotificationPrefsPage extends StatefulWidget {
   const NotificationPrefsPage({super.key});
 
@@ -31,7 +20,6 @@ class _NotificationPrefsPageState extends State<NotificationPrefsPage> {
   Map<NotificationChannel, bool>? _prefs;
   final _saving = <NotificationChannel>{};
 
-  // Resolved at render — see the note on NotificationChannel.
   static String _channelLabel(BuildContext context, NotificationChannel c) =>
       switch (c) {
         NotificationChannel.orders => context.l10n.notifOrders,
@@ -60,8 +48,6 @@ class _NotificationPrefsPageState extends State<NotificationPrefsPage> {
   }
 
   Future<void> _toggle(NotificationChannel channel, bool value) async {
-    // Optimistic: the switch moves instantly. A toggle that lags behind the
-    // finger feels broken even when it succeeds.
     setState(() {
       _prefs![channel] = value;
       _saving.add(channel);
@@ -73,7 +59,7 @@ class _NotificationPrefsPageState extends State<NotificationPrefsPage> {
     result.fold(
       (f) {
         setState(() {
-          _prefs![channel] = !value; // roll back rather than leave a lie
+          _prefs![channel] = !value; 
           _saving.remove(channel);
         });
         ScaffoldMessenger.of(context)
@@ -100,17 +86,17 @@ class _NotificationPrefsPageState extends State<NotificationPrefsPage> {
                         ? null
                         : (v) => _toggle(channel, v),
                     title: Text(_channelLabel(context, channel),
-                  style: context.texts.labelMedium,),
+                        style: context.texts.label,), // FIXED
                     subtitle: Text(
                       _channelSubtitle(context, channel),
-                      style: context.texts.bodySmall,
+                      style: context.texts.caption, // FIXED
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsetsDirectional.all(WaveSpacing.x20), // FIXED
                   child: Text(
                     context.l10n.notifOrdersOffWarning,
-                    style: context.texts.bodySmall,
+                    style: context.texts.caption, // FIXED
                   ),
                 ),
               ],

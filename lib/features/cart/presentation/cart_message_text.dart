@@ -9,11 +9,12 @@ import 'package:wave/features/cart/presentation/bloc/cart_bloc.dart';
 /// language the user is currently reading.
 String cartMessageText(BuildContext context, CartMessage message) =>
     switch (message) {
-      CartMessage.addedToCart => context.l10n.addedToCart,
-      CartMessage.stockLimitReached => context.l10n.stockLimitReached,
-      CartMessage.promoApplied => context.l10n.promoApplied,
-      CartMessage.promoInvalid => context.l10n.promoInvalid,
-      CartMessage.promoExpired => context.l10n.promoExpired,
-      CartMessage.promoUsed => context.l10n.promoUsed,
-      CartMessage.promoBelowMinimum => context.l10n.promoBelowMinimum,
+      CartMessage.addedToCart => context.l10n.cartAddedToCart,
+      CartMessage.stockLimitReached => context.l10n.cartStockLimitReached,
+      CartMessage.outOfStock => context.l10n.cartOutOfStock,
+      CartMessage.promoApplied => context.l10n.cartPromoApplied,
+      CartMessage.promoInvalid => context.l10n.cartPromoInvalid,
+      CartMessage.promoExpired => context.l10n.cartPromoExpired,
+      CartMessage.promoUsed => context.l10n.cartPromoUsed,
+      CartMessage.promoBelowMinimum => context.l10n.cartPromoBelowMinimum,
     };

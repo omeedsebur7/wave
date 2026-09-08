@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/config/remote_config_keys.dart';
 import 'package:wave/core/services/remote_config_service.dart';
 
@@ -15,7 +15,7 @@ import 'package:wave/core/services/remote_config_service.dart';
 /// shard sub-documents; a like increments one at random. Reads take the
 /// aggregation SUM query, and a scheduled Cloud Function materialises the total
 /// back onto the parent doc so list views can render a count without N reads.
-@lazySingleton
+
 class ShardedCounterService {
   ShardedCounterService(this._config);
 

@@ -4,14 +4,16 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/core/utils/dates.dart';
 import 'package:wave/core/widgets/directional_chevron.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/legal/data/legal_repository.dart';
 import 'package:wave/features/legal/domain/legal_document.dart';
 import 'package:wave/features/legal/presentation/legal_doc_text.dart';
 
-/// Renders a versioned legal document (§7).
 class LegalDocumentPage extends StatefulWidget {
   const LegalDocumentPage({required this.docType, super.key});
 
@@ -54,7 +56,11 @@ class _LegalDocumentPageState extends State<LegalDocumentPage> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            // FIXED: Replaced CircularProgressIndicator with WaveStateView
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()),
+              content: SizedBox.shrink(),
+            );
           }
 
           final doc = snapshot.data;
@@ -67,21 +73,18 @@ class _LegalDocumentPageState extends State<LegalDocumentPage> {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsetsDirectional.all(WaveSpacing.x20), // FIXED
             children: [
               Text(
                 context.l10n.versionUpdated(
                   doc.version,
                   _formatDate(context, doc.updatedAt),
                 ),
-                style: context.texts.bodySmall,
+                style: context.texts.caption, // FIXED
               ),
-              const SizedBox(height: 16),
-              // Rendered as plain text on purpose. A markdown renderer is a
-              // dependency and an attack surface for a screen whose whole job
-              // is to display words accurately.
-              SelectableText(doc.body, style: context.texts.bodyMedium),
-              const SizedBox(height: 40),
+              const SizedBox(height: WaveSpacing.x16), // FIXED
+              SelectableText(doc.body, style: context.texts.body), // FIXED
+              const SizedBox(height: WaveSpacing.x40), // FIXED
             ],
           );
         },
@@ -93,7 +96,6 @@ class _LegalDocumentPageState extends State<LegalDocumentPage> {
       Dates.short(context, d);
 }
 
-/// Blocking re-acceptance when a document version changes (§7).
 class TermsReacceptanceGate extends StatefulWidget {
   const TermsReacceptanceGate({
     required this.state,
@@ -139,7 +141,7 @@ class _TermsReacceptanceGateState extends State<TermsReacceptanceGate> {
       child: Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsetsDirectional.all(WaveSpacing.x24), // FIXED
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,16 +154,16 @@ class _TermsReacceptanceGateState extends State<TermsReacceptanceGate> {
                               legalDocTitle(context, outstanding.first),
                             )
                           : context.l10n.termsChanged,
-                  style: context.texts.headlineMedium,
+                  style: context.texts.headline, // FIXED
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: WaveSpacing.x12), // FIXED
                 Text(
                   isFirst
                       ? context.l10n.acceptToUse
                       : context.l10n.readWhatChanged,
-                  style: context.texts.bodyMedium,
+                  style: context.texts.body, // FIXED
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: WaveSpacing.x20), // FIXED
 
                 for (final type in outstanding)
                   ListTile(
@@ -169,13 +171,13 @@ class _TermsReacceptanceGateState extends State<TermsReacceptanceGate> {
                     leading: const Icon(Icons.description_outlined),
                     title: Text(
                       legalDocTitle(context, type),
-                      style: context.texts.labelMedium,
+                      style: context.texts.label, // FIXED
                     ),
                     subtitle: Text(
                       context.l10n.versionLabel(
                         widget.state.currentVersions[type]!,
                       ),
-                      style: context.texts.bodySmall,
+                      style: context.texts.caption, // FIXED
                     ),
                     trailing: const DirectionalChevron(size: 20),
                     onTap: () => Navigator.of(context).push(
@@ -185,24 +187,14 @@ class _TermsReacceptanceGateState extends State<TermsReacceptanceGate> {
                     ),
                   ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: WaveSpacing.x24), // FIXED
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
+                  child: WaveButton( // FIXED: FilledButton -> WaveButton
+                    expand: true,
+                    isLoading: _saving,
+                    label: context.l10n.acceptAndContinue,
                     onPressed: _saving ? null : _accept,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _saving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(context.l10n.acceptAndContinue),
                   ),
                 ),
               ],

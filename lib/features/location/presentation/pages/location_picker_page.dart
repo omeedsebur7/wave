@@ -7,25 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/location/data/osm_config.dart';
 import 'package:wave/features/location/data/saved_location_store.dart';
 import 'package:wave/features/location/domain/entities/delivery_location.dart';
 
-/// Where the buyer says to deliver.
-///
-/// The pin is fixed to the centre of the screen and the map moves underneath
-/// it. That is the opposite of dragging a marker, and it is deliberate: a
-/// dragged marker spends the whole gesture under the user's thumb, so they
-/// cannot see the thing they are aiming at. A fixed pin keeps the target
-/// visible and turns placement into panning, which phones are good at.
-///
-/// Opened from Buy Now. Note the tension with §5.1's one-tap claim — a map
-/// between the tap and the order is real friction on the app's core path. It is
-/// mitigated by pre-centring on the last confirmed location, so a repeat buyer
-/// confirms rather than searches, but it is friction and worth measuring: the
-/// funnel already separates `buy_now_tapped` from `purchase_completed`, and
-/// this screen now sits between them.
 class LocationPickerPage extends StatefulWidget {
   const LocationPickerPage({
     this.initial,
@@ -33,11 +21,7 @@ class LocationPickerPage extends StatefulWidget {
     super.key,
   });
 
-  /// Pre-centres the map. Usually the buyer's last confirmed delivery point.
   final DeliveryLocation? initial;
-
-  /// Overrides the confirm button, so the same screen can serve "set delivery
-  /// location" and "place order" without pretending to be two screens.
   final String? confirmLabel;
 
   @override
@@ -53,12 +37,8 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   LocationSource _source = LocationSource.pin;
   bool _locating = false;
   String? _locateError;
-
-  /// True while the map is settling. The confirm button stays live — blocking
-  /// it mid-gesture would make the screen feel stuck — but the coordinate
-  /// readout is hidden, because a number changing forty times a second is
-  /// noise pretending to be information.
   
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -71,8 +51,6 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       _note.text = saved.note ?? '';
     } else {
       _centre = OsmConfig.fallbackCentre;
-      // No saved point, so try the device immediately. Someone who opened this
-      // from Buy Now wants to be somewhere useful, not looking at all of Iraq.
       unawaited(_useMyLocation(silent: true));
     }
   }
@@ -98,9 +76,6 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        // Not an error state. Placing a pin by hand is a first-class way to use
-        // this screen — plenty of people are ordering to an address they are
-        // not standing in — so a refusal just means the map stays where it is.
         setState(() {
           _locating = false;
           _locateError = silent ? null : context.l10n.locationPermissionDenied;
@@ -111,8 +86,6 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          // Bounded so the button cannot spin indefinitely indoors. Ten seconds
-          // of nothing means the fix is not coming.
           timeLimit: Duration(seconds: 10),
         ),
       );
@@ -143,21 +116,25 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         longitude: _centre.lng,
         setBy: _source,
         note: _note.text.trim().isEmpty ? null : _note.text.trim(),
-        // Only meaningful for a device fix. Once the map has been panned, the
-        // GPS accuracy describes where the phone was, not where the pin is.
         accuracyMetres: _source == LocationSource.gps ? _accuracy : null,
         capturedAt: DateTime.now(),
       );
 
   Future<void> _confirm() async {
+    if (_isSaving) return;
+    
     final location = _current;
     if (!location.isValid) return;
 
-    // Remembered so the next order opens on this point rather than on Iraq.
-    await getIt<SavedLocationStore>().save(location);
-
-    if (!mounted) return;
-    Navigator.of(context).pop(location);
+    setState(() => _isSaving = true);
+    
+    try {
+      await getIt<SavedLocationStore>().save(location);
+      if (!mounted) return;
+      Navigator.of(context).pop(location);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -187,26 +164,18 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                         lat: camera.center.latitude,
                         lng: camera.center.longitude,
                       );
-                      // Panning makes it a hand-placed pin, whatever it was
-                      // before. Keeping `gps` here would attach a device
-                      // accuracy figure to a point the device never reported.
                       _source = LocationSource.pin;
                       _accuracy = null;
-                      
                     });
                   },
                 ),
 
-                // The fixed pin. Offset upward by half its height so the point
-                // of the pin sits on the map centre rather than its middle —
-                // otherwise every location is placed slightly north of where
-                // the user aimed.
                 IgnorePointer(
                   child: Transform.translate(
-                    offset: const Offset(0, -18),
+                    offset: const Offset(0, -WaveSpacing.x20),
                     child: Icon(
                       Icons.location_on,
-                      size: 44,
+                      size: WaveSpacing.x40,
                       color: c.primary,
                       shadows: const [
                         Shadow(blurRadius: 8, color: Colors.black54),
@@ -216,31 +185,28 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 ),
 
                 PositionedDirectional(
-                  end: 12,
-                  bottom: 28,
+                  end: WaveSpacing.x12,
+                  bottom: WaveSpacing.x32,
                   child: FloatingActionButton.small(
                     heroTag: 'locate',
                     onPressed: _locating ? null : _useMyLocation,
                     tooltip: context.l10n.useMyLocation,
                     child: _locating
                         ? const SizedBox(
-                            width: 18,
-                            height: 18,
+                            width: WaveSpacing.x20,
+                            height: WaveSpacing.x20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.my_location, size: 20),
+                        : const Icon(Icons.my_location, size: WaveSpacing.x20),
                   ),
                 ),
 
                 if (OsmConfig.usingSharedOsmTiles)
-                  // Debug-visible only. A silent dependency on donated
-                  // infrastructure is how an app ships pointing at it.
                   const PositionedDirectional(
-                    top: 8,
-                    start: 8,
+                    top: WaveSpacing.x8,
+                    start: WaveSpacing.x8,
                     child: _DevWarning(
-                      text: 'Using shared OSM tiles — set TILE_URL before '
-                          'release',
+                      text: 'Using shared OSM tiles — set TILE_URL before release',
                     ),
                   ),
               ],
@@ -248,11 +214,11 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
           ),
 
           Container(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 16,
-              bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+            padding: EdgeInsetsDirectional.only(
+              start: WaveSpacing.x20,
+              end: WaveSpacing.x20,
+              top: WaveSpacing.x16,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + WaveSpacing.x20,
             ),
             decoration: BoxDecoration(
               color: c.surface,
@@ -262,20 +228,18 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(context.l10n.dragMapToSetPin,
-                    style: context.texts.bodySmall,),
+                Text(context.l10n.dragMapToSetPin, style: context.texts.caption),
 
                 if (location.isTooVague) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: WaveSpacing.x8),
                   Row(
                     children: [
-                      Icon(Icons.error_outline, size: 16, color: c.warning),
-                      const SizedBox(width: 6),
+                      Icon(Icons.error_outline, size: WaveSpacing.x16, color: c.warning),
+                      const SizedBox(width: WaveSpacing.x8),
                       Expanded(
                         child: Text(
                           context.l10n.locationTooVague,
-                          style: context.texts.bodySmall
-                              ?.copyWith(color: c.warning),
+                          style: context.texts.caption.copyWith(color: c.warning),
                         ),
                       ),
                     ],
@@ -283,44 +247,32 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 ],
 
                 if (_locateError != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: WaveSpacing.x8),
                   Text(
                     _locateError!,
-                    style: context.texts.bodySmall?.copyWith(color: c.warning),
+                    style: context.texts.caption.copyWith(color: c.warning),
                   ),
                 ],
 
-                const SizedBox(height: 12),
-                TextField(
+                const SizedBox(height: WaveSpacing.x12),
+                
+                WaveTextField(
+                  label: context.l10n.deliveryNote,
+                  hint: context.l10n.deliveryNoteHint,
                   controller: _note,
-                  maxLength: 140,
-                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.done,
                   onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: context.l10n.deliveryNote,
-                    hintText: context.l10n.deliveryNoteHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    counterText: '',
-                  ),
                 ),
-                const SizedBox(height: 4),
-                // Says why the note matters. Couriers here find addresses by
-                // landmark and a phone call far more often than by coordinates.
-                Text(context.l10n.deliveryNoteWhy,
-                    style: context.texts.bodySmall,),
+                
+                const SizedBox(height: WaveSpacing.x4),
+                Text(context.l10n.deliveryNoteWhy, style: context.texts.caption),
 
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: location.isValid ? _confirm : null,
-                    style:
-                        FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                    child: Text(
-                      widget.confirmLabel ?? context.l10n.confirmLocation,
-                    ),
-                  ),
+                const SizedBox(height: WaveSpacing.x16),
+                WaveButton(
+                  label: widget.confirmLabel ?? context.l10n.confirmLocation,
+                  expand: true,
+                  isLoading: _isSaving,
+                  onPressed: location.isValid && !_isSaving ? _confirm : null,
                 ),
               ],
             ),
@@ -338,34 +290,28 @@ class _DevWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Release builds strip this: `assert` runs only in debug, so the branch
-    // folds away and the warning cannot leak into a store build.
     var visible = false;
     assert(
       () {
         visible = true;
         return true;
       }(),
-      // The message is never shown — this assert can never actually FAIL,
-      // since the closure always returns true; its only job is to run
-      // debug-only code via assert's short-circuiting. prefer_asserts_with_
-      // message still wants a string, so this one documents what the assert
-      // is really for rather than describing a failure condition that does
-      // not exist.
-      'debug-only: flips `visible` so this dev warning renders in debug '
-      'builds and is compiled out of release ones',
+      'debug-only: flips `visible` so this dev warning renders in debug builds',
     );
     if (!visible) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: WaveSpacing.x8,
+        vertical: WaveSpacing.x4,
+      ),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+        color: context.waveColors.warning,
+        borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 10, color: Colors.black),
+        style: context.texts.caption.copyWith(color: context.waveColors.surface), // FIXED: Replaced onWarning with surface
       ),
     );
   }

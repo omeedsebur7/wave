@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wave/app/di/injector.dart';
-import 'package:wave/app/router/routes.dart';
 import 'package:wave/app/widgets/wave_shell.dart';
 import 'package:wave/core/analytics/analytics_service.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_pages.dart';
 import 'package:wave/features/auth/presentation/pages/account_recovery_page.dart';
 import 'package:wave/features/auth/presentation/pages/phone_verify_page.dart';
 import 'package:wave/features/auth/presentation/pages/sign_in_page.dart';
@@ -36,12 +36,60 @@ import 'package:wave/features/selling/presentation/pages/seller_orders_page.dart
 import 'package:wave/features/selling/presentation/pages/seller_stats_page.dart';
 import 'package:wave/features/settings/presentation/pages/language_page.dart';
 
+/// Every route path and name in one place. Deep links (§5.2) are built from
+/// these constants so a shared link and an in-app push can never drift apart.
+abstract final class Routes {
+  // Shell tabs
+  static const reels = '/reels';
+  static const marketplace = '/marketplace';
+  static const chat = '/chat';
+  static const profile = '/profile';
+
+  // Full-screen (outside the shell)
+  static const onboarding = '/onboarding';
+  static const signIn = '/sign-in';
+  static const phoneVerify = '/verify-phone';
+  static const accountRecovery = '/recover';
+
+  /// Internal moderation queue. Not linked from any user-facing screen; you
+  /// arrive by URL and the screen refuses without the moderator claim.
+  static const moderationQueue = '/internal/review-queue';
+  static const forceUpdate = '/update-required';
+
+  static const uploadReel = '/publish/reel';
+  static const listProduct = '/publish/product';
+
+  // Path TEMPLATES. Not navigated to directly — use the builders at the bottom
+  // of this class.
+  static const reelDetail = '/reels/:reelId';
+  static const productDetail = '/marketplace/product/:productId';
+  static const sellerProfile = '/seller/:sellerId';
+
+  static const cart = '/cart';
+  static const checkout = '/checkout';
+  static const orders = '/profile/orders';
+  static const orderDetail = '/profile/orders/:orderId';
+  static const search = '/search';
+  static const sellerOrders = '/profile/selling';
+  static const sellerStats = '/profile/selling/stats';
+  static const notifications = '/notifications';
+  static const favourites = '/profile/favourites';
+  static const savedReels = '/profile/saved';
+  static const notificationPrefs = '/profile/notification-settings';
+  static const language = '/profile/language';
+  static const legal = '/legal/:docType';
+
+  static String legalPath(String docType) => '/legal/$docType';
+
+  static const notFound = '/not-found';
+
+  static String reelDetailPath(String id) => '/reels/$id';
+  static String productDetailPath(String id) => '/marketplace/product/$id';
+  static String sellerProfilePath(String id) => '/seller/$id';
+  static String orderDetailPath(String id) => '/profile/orders/$id';
+}
+
 /// GoRouter setup (§2).
-///
-/// StatefulShellRoute gives each of the four tabs its own Navigator, so
-/// scrolling three products deep in Marketplace, switching to Chat, and coming
-/// back leaves you exactly where you were. That's the behaviour users expect
-/// and it's very hard to bolt on afterwards.
 class AppRouter {
   AppRouter({
     required this.isSignedIn,
@@ -52,15 +100,7 @@ class AppRouter {
 
   final bool Function() isSignedIn;
   final bool Function() needsForceUpdate;
-
-  /// First-run gate. Read through a callback rather than captured once, so
-  /// completing the walkthrough takes effect on the next redirect without
-  /// rebuilding the router.
   final bool Function() hasSeenOnboarding;
-
-  /// Re-runs the redirect logic whenever auth state changes, so signing in
-  /// from a deep-linked checkout returns the user to checkout rather than
-  /// dumping them on the feed.
   final Listenable? refreshListenable;
 
   static final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -74,12 +114,8 @@ class AppRouter {
     initialLocation: Routes.reels,
     debugLogDiagnostics: true,
     refreshListenable: refreshListenable,
-    // Screen views, recorded once here rather than in forty widgets. Anything
-    // per-screen is a line somebody forgets on the forty-first.
     observers: [_ScreenViewObserver(getIt<AnalyticsService>())],
 
-    // Invalid or expired deep links land on a real error route with a way out,
-    // never a blank screen or a crash (§2).
     errorBuilder: (context, state) => Scaffold(
       body: WaveErrorView(
         title: context.l10n.errorDeadLink,
@@ -91,22 +127,15 @@ class AppRouter {
     ),
 
     redirect: (context, state) {
-      // A blocked build can't route anywhere except the update wall.
       if (needsForceUpdate() && state.matchedLocation != Routes.forceUpdate) {
         return Routes.forceUpdate;
       }
 
-      // First run. Checked after the update wall — an unsupported build should
-      // not walk someone through a product they cannot use — and before auth,
-      // since the walkthrough deliberately runs before any sign-in.
       if (!hasSeenOnboarding() &&
           state.matchedLocation != Routes.onboarding) {
         return Routes.onboarding;
       }
-      // Guest mode is deliberately permissive: browsing Reels and the
-      // Marketplace never requires an account (§1). Only checkout does, and
-      // that gate lives on the checkout route itself rather than here, so a
-      // guest never gets bounced out of discovery.
+      
       const authOnly = [Routes.checkout, Routes.orders, Routes.uploadReel];
       final needsAuth =
           authOnly.any((r) => state.matchedLocation.startsWith(r));
@@ -157,8 +186,6 @@ class AppRouter {
           ),
         ),
       ),
-      // Outside the shell so a seller profile opened from a Reel, a product or
-      // a deep link behaves the same way in all three cases.
       GoRoute(
         path: Routes.sellerProfile,
         builder: (context, state) => SellerProfilePage(
@@ -223,11 +250,15 @@ class AppRouter {
                 routes: [
                   GoRoute(
                     path: 'product/:productId',
-                    builder: (context, state) => ProductDetailPage(
-                      productId: state.pathParameters['productId']!,
-                      // Present when navigated from the grid, absent on a cold
-                      // deep link — the page handles both.
-                      preloaded: state.extra as Product?,
+                    name: Routes.productDetail, // پێویستە ناوەکەشی بنووسرێت
+                    pageBuilder: (context, state) => WavePages.sharedAxis(
+                      context,
+                      state,
+                      ProductDetailPage(
+                        productId: state.pathParameters['productId']!,
+                        preloaded: state.extra as Product?,
+
+                      ),
                     ),
                   ),
                 ],
@@ -287,11 +318,6 @@ class AppRouter {
   );
 }
 
-/// Reports screen views to Analytics from one place.
-///
-/// Uses the route PATH, not the widget name, so a screen renamed in code keeps
-/// the same analytics identity — otherwise a refactor silently splits a funnel
-/// in two.
 class _ScreenViewObserver extends NavigatorObserver {
   _ScreenViewObserver(this._analytics);
 
@@ -312,8 +338,6 @@ class _ScreenViewObserver extends NavigatorObserver {
   void _report(Route<dynamic>? route) {
     final name = route?.settings.name;
     if (name == null || name.isEmpty) return;
-    // Strip path parameters: '/reels/abc123' and '/reels/def456' are the same
-    // screen, and keeping the ids would produce thousands of one-view screens.
     final normalised = name.replaceAll(RegExp('/[a-zA-Z0-9_-]{16,}'), '/:id');
     _analytics.screen(normalised);
   }

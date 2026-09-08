@@ -3,18 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/moderation/data/moderation_repository.dart';
 import 'package:wave/features/moderation/domain/entities/report.dart';
 
-/// The moderator review queue (§4).
-///
-/// Deliberately English-only. This is an internal tool for a small team, not a
-/// user-facing surface, and translating it into three languages would be cost
-/// with no reader. It is also not linked from anywhere a normal user can reach:
-/// you arrive by URL, and the screen refuses unless your token carries the
-/// moderator claim.
 class ModerationQueuePage extends StatefulWidget {
   const ModerationQueuePage({super.key});
 
@@ -34,13 +30,14 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> {
         future: _access,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            // FIXED: Replaced standard CircularProgressIndicator with WaveStateView
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()),
+              content: SizedBox.shrink(),
+            );
           }
 
           if (snapshot.data != true) {
-            // Says nothing about the queue's contents or size. A refusal that
-            // leaked "12 reports pending" would be a small intelligence gift to
-            // someone probing.
             return WaveErrorView(
               title: 'Not available',
               message: 'This area is for moderators.',
@@ -54,7 +51,10 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> {
             stream: _repo.watchQueue(),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const WaveStateView(
+                  state: WaveLoading(SizedBox.shrink()),
+                  content: SizedBox.shrink(),
+                );
               }
 
               final reports = snap.data ?? const <Report>[];
@@ -67,9 +67,9 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsetsDirectional.all(WaveSpacing.x16), // FIXED
                 itemCount: reports.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) => const SizedBox(height: WaveSpacing.x12), // FIXED
                 itemBuilder: (context, i) {
                   final report = reports[i];
                   return _ReportCard(
@@ -83,9 +83,6 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> {
                       result.fold(
                         (f) => ScaffoldMessenger.of(context)
                             .showSnackBar(SnackBar(content: Text(f.message))),
-                        // No success toast. The item leaving the queue IS the
-                        // confirmation, and a moderator working through a list
-                        // does not want a toast per decision.
                         (_) {},
                       );
                     },
@@ -111,13 +108,13 @@ class _ReportCard extends StatelessWidget {
     final c = context.waveColors;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsetsDirectional.all(WaveSpacing.x16), // FIXED
       decoration: BoxDecoration(
         border: Border.all(
           color: report.isUrgent ? c.error : c.border,
-          width: report.isUrgent ? 2 : 1,
+          width: report.isUrgent ? 2.0 : 1.0,
         ),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,48 +122,43 @@ class _ReportCard extends StatelessWidget {
           Row(
             children: [
               if (report.isUrgent) ...[
-                Icon(Icons.priority_high, size: 18, color: c.error),
-                const SizedBox(width: 6),
+                Icon(Icons.priority_high, size: WaveSpacing.x16, color: c.error), // FIXED
+                const SizedBox(width: WaveSpacing.x8), // FIXED
               ],
               Expanded(
                 child: Text(
                   '${report.targetType.name} · ${report.reason.name}',
-                  style: context.texts.labelMedium,
+                  style: context.texts.label, // FIXED
                 ),
               ),
               if (report.reportCount > 1)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: WaveSpacing.x8, 
+                    vertical: 2,
+                  ), // FIXED
                   decoration: BoxDecoration(
                     color: c.warning.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(WaveSpacing.x8),
                   ),
-                  // The number that matters most: one report is an opinion,
-                  // eight independent ones is a pattern.
                   child: Text(
                     '${report.reportCount} reports',
-                    style: context.texts.bodySmall?.copyWith(color: c.warning),
+                    style: context.texts.caption.copyWith(color: c.warning), // FIXED
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: WaveSpacing.x8), // FIXED
 
-          // Selectable so a moderator can copy the id into the app or the
-          // console to see the thing itself. There is deliberately no preview:
-          // rendering reported content inline would mean a moderator sees every
-          // piece of it whether or not they chose to.
           SelectableText(
             report.targetId,
-            style: context.texts.bodySmall?.copyWith(color: c.textSecondary),
+            style: context.texts.caption.copyWith(color: c.textSecondary), // FIXED
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: WaveSpacing.x12), // FIXED
 
-          // The reporter's identity is never rendered anywhere on this screen.
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: WaveSpacing.x8,
+            runSpacing: WaveSpacing.x8,
             children: [
               _ActionChip(
                 label: 'Dismiss',
@@ -213,14 +205,13 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.waveColors;
-    return ActionChip(
-      avatar: Icon(icon, size: 16, color: destructive ? c.error : null),
-      label: Text(label),
+    // FIXED: Replaced standard ActionChip with proper WaveButton sizes
+    return WaveButton(
+      variant: destructive ? WaveButtonVariant.destructive : WaveButtonVariant.secondary,
+      size: WaveButtonSize.sm,
+      icon: icon,
+      label: label,
       onPressed: onTap,
-      labelStyle: destructive
-          ? context.texts.bodySmall?.copyWith(color: c.error)
-          : context.texts.bodySmall,
     );
   }
 }

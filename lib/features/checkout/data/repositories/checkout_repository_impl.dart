@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:injectable/injectable.dart' hide Order;
+
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/utils/idempotency.dart';
 import 'package:wave/core/utils/result.dart';
@@ -13,7 +13,7 @@ import 'package:wave/features/location/domain/entities/delivery_location.dart';
 import 'package:wave/features/orders/data/models/order_dto.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
 
-@LazySingleton(as: CheckoutRepository)
+
 class CheckoutRepositoryImpl implements CheckoutRepository {
   CheckoutRepositoryImpl(this._auth, this._db, this._functions, this._saved);
 

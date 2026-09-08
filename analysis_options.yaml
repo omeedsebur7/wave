@@ -1,12 +1,25 @@
 include: package:very_good_analysis/analysis_options.yaml
 
 analyzer:
+  plugins:
+    - custom_lint
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "lib/l10n/generated/**"
   errors:
     invalid_annotation_target: ignore
+
+# NOTE: test/** is deliberately NOT excluded here. Excluding it would also
+# stop very_good_analysis from checking the test suite. The WAVE lints skip
+# tests through zoneFor() in packages/wave_lints/lib/src/wave_zones.dart,
+# which is the narrower and correct place for it.
+
+custom_lint:
+  rules:
+    - no_raw_dimensions
+    - no_raw_colors
+    - directional_insets_only
 
 linter:
   rules:

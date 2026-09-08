@@ -1,0 +1,16 @@
+name: wave_lints
+description: Lint rules enforcing the WAVE design system.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+# PIN THESE. `any` resolved fine today, but custom_lint breaks hard on
+# analyzer version drift and the failure mode is silent — the plugin stops
+# reporting rather than erroring. Run `dart pub deps` in this directory,
+# read the resolved versions, and replace `any` with a caret constraint.
+dependencies:
+  analyzer: any
+  analyzer_plugin: any
+  custom_lint_builder: any

@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/core/utils/numbers.dart';
 import 'package:wave/features/comments/presentation/widgets/comments_sheet.dart';
 import 'package:wave/features/moderation/domain/entities/report.dart';
@@ -12,11 +13,6 @@ import 'package:wave/features/moderation/presentation/widgets/report_sheet.dart'
 import 'package:wave/features/reels/domain/entities/reel.dart';
 import 'package:wave/features/reels/presentation/bloc/reels_feed_bloc.dart';
 
-/// Like / comment / save / share / report rail.
-///
-/// Micro-interactions here are scale + haptic (§3.5) — deliberately subtle.
-/// The bold motion in this app is reserved for the publish sheet and the 3D
-/// reveal.
 class ReelActionRail extends StatelessWidget {
   const ReelActionRail({required this.reel, super.key});
 
@@ -25,13 +21,14 @@ class ReelActionRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<ReelsFeedBloc>();
+    final c = context.waveColors;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _ActionButton(
           icon: reel.likedByMe ? Icons.favorite : Icons.favorite_border,
-          color: reel.likedByMe ? context.waveColors.error : Colors.white,
+          color: reel.likedByMe ? c.error : c.onScrim, // FIXED: Colors.white to onScrim
           label: _compact(context, reel.likeCount),
           semanticLabel: context.l10n.like,
           onTap: () {
@@ -41,12 +38,14 @@ class ReelActionRail extends StatelessWidget {
         ),
         _ActionButton(
           icon: Icons.mode_comment_outlined,
+          color: c.onScrim, // FIXED
           label: _compact(context, reel.commentCount),
           semanticLabel: context.l10n.comments,
           onTap: () => _openComments(context),
         ),
         _ActionButton(
           icon: reel.savedByMe ? Icons.bookmark : Icons.bookmark_border,
+          color: c.onScrim, // FIXED
           label: context.l10n.save,
           semanticLabel:
               reel.savedByMe ? context.l10n.remove : context.l10n.save,
@@ -57,19 +56,17 @@ class ReelActionRail extends StatelessWidget {
         ),
         _ActionButton(
           icon: Icons.ios_share,
+          color: c.onScrim, // FIXED
           label: context.l10n.share,
           semanticLabel: context.l10n.shareThisReel,
           onTap: () => Share.share(
-            // A deep link, so the recipient lands on this Reel rather than the
-            // app's front page (§5.2). Sharing a Reel that sells something is
-            // the cheapest distribution this app has, and it only works if the
-            // link resolves to the Reel.
             '${reel.caption.isEmpty ? reel.authorName : reel.caption}\n'
             'https://wave.app${Routes.reelDetailPath(reel.id)}',
           ),
         ),
         _ActionButton(
           icon: Icons.flag_outlined,
+          color: c.onScrim, // FIXED
           label: context.l10n.report,
           semanticLabel: context.l10n.reportThisReel,
           onTap: () => _openReport(context),
@@ -90,10 +87,6 @@ class ReelActionRail extends StatelessWidget {
         targetId: reel.id,
       );
 
-  /// 1200 -> 1.2K. Long counts push the rail off a narrow screen.
-  ///
-  /// Delegated to `intl` rather than hand-rolled, because the suffix is
-  /// language-specific: this returned a Latin `K` in Arabic and Kurdish.
   static String _compact(BuildContext context, int n) => context.compact(n);
 }
 
@@ -103,7 +96,7 @@ class _ActionButton extends StatefulWidget {
     required this.label,
     required this.semanticLabel,
     required this.onTap,
-    this.color = Colors.white,
+    required this.color,
   });
 
   final IconData icon;
@@ -132,7 +125,6 @@ class _ActionButtonState extends State<_ActionButton>
   }
 
   void _handleTap() {
-    // Reduced motion: skip the bounce, keep the action.
     if (!MediaQuery.disableAnimationsOf(context)) {
       _c.reverse().then((_) => _c.forward());
     }
@@ -145,25 +137,25 @@ class _ActionButtonState extends State<_ActionButton>
       button: true,
       label: widget.semanticLabel,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsetsDirectional.symmetric(vertical: WaveSpacing.x8), // FIXED
         child: InkWell(
           onTap: _handleTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24), // FIXED
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48), // FIXED
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ScaleTransition(
                   scale: _c,
-                  child: Icon(widget.icon, color: widget.color, size: 28),
+                  child: Icon(widget.icon, color: widget.color, size: 28), // FIXED
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 2), // FIXED
                 ExcludeSemantics(
                   child: Text(
                     widget.label,
-                    style: context.texts.bodySmall
-                        ?.copyWith(color: Colors.white, fontSize: 11),
+                    style: context.texts.caption // FIXED
+                        .copyWith(color: widget.color, fontSize: 11), 
                   ),
                 ),
               ],

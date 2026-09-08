@@ -534,5 +534,51 @@
   "productCardSemantic": "{title}، {price}",
   "statSemantic": "{value} {label}",
   "updateSearchStoreManually": "بۆ نوێکردنەوە لە کۆگای ئەپەکەت گەڕان بۆ WAVE بکە.",
-  "systemDefault": "بنەڕەتی سیستەم"
+  "systemDefault": "بنەڕەتی سیستەم",
+  "quantityDecrease": "کەمکردنەوەی بڕ",
+  "quantityIncrease": "زیادکردنی بڕ",
+  "quantityLabel": "بڕ",
+  "subtotal": "کۆی نرخ",
+  "pdpAddToCart": "زیادکردن بۆ سەبەتە",
+  "stockIn": "لە کۆگا بەردەستە",
+  "stockOut": "لە کۆگا نەماوە",
+  "stockLow": "تەنها {count} دانە ماوە",
+  "@stockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quantityTitle": "هەڵبژاردنی بڕ",
+  "pdpDescription": "دەربارەی ئەم کاڵایە",
+  "commonBack": "گەڕانەوە",
+  "pdpSoldBy": "فرۆشراوە لەلایەن",
+  "pdpImageGallery": "وێنەی {index} لە {total}",
+  "@pdpImageGallery": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cartAddedToCart": "خرایە سەبەتەوە",
+  "cartStockLimitReached": "گەیشتیتە کۆتا سنووری ستۆک",
+  "cartOutOfStock": "لە ستۆکدا نەماوە",
+  "cartPromoApplied": "کۆدی داشکاندن بەکارهێنرا",
+  "cartPromoInvalid": "کۆدی داشکاندن هەڵەیە",
+  "cartPromoExpired": "کۆدی داشکاندن بەسەرچووە",
+  "cartPromoUsed": "ئەم کۆدە پێشتر بەکارهێنراوە",
+  "cartPromoBelowMinimum": "نرخی داواکارییەکەت کەمترە لە مەرجی کۆدەکە",
+  "signInTitle": "چوونەژوورەوە",
+  "acceptTerms": "ڕازیبوونم بە مەرج و ڕێنماییەکان",
+  "confirmAge": "تەمەنم سەروو ١٨ ساڵە",
+  "orContinueWith": "یان لە ڕێگەی ئەمانەوە بەردەوام بە",
+  "enterCodeSentToPhone": "ئەو کۆدەی بۆ مۆبایلەکەت نێردراوە لێرە بنووسە",
+  "verificationCode": "کۆدی دڵنیابوونەوە",
+  "verify": "دڵنیابوونەوە",
+  "changePhoneNumber": "گۆڕینی ژمارەی مۆبایل"
 }

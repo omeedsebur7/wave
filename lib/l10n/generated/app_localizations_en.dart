@@ -5,8 +5,8 @@ import 'app_localizations.dart';
 // ignore_for_file: type=lint
 
 /// The translations for English (`en`).
-class AppL10nEn extends AppL10n {
-  AppL10nEn([String locale = 'en']) : super(locale);
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
   String get appName => 'WAVE';
@@ -719,12 +719,12 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String durationOfMax(int actual, int max) {
+  String durationOfMax(int actual, Object max) {
     return '${actual}s of ${max}s';
   }
 
   @override
-  String videoTooLong(int actual, int max) {
+  String videoTooLong(int actual, Object max) {
     return 'That video is ${actual}s. Trim it to $max seconds or less and pick it again.';
   }
 
@@ -801,7 +801,7 @@ class AppL10nEn extends AppL10n {
   String get open => 'Open';
 
   @override
-  String viewsAndSold(int views, int sold) {
+  String viewsAndSold(int views, Object sold) {
     return '$views views · $sold sold';
   }
 
@@ -1025,7 +1025,7 @@ class AppL10nEn extends AppL10n {
   String get listAProductBody => 'Add photos, price and stock.';
 
   @override
-  String versionUpdated(String version, String date) {
+  String versionUpdated(String version, Object date) {
     return 'Version $version · updated $date';
   }
 
@@ -1174,12 +1174,12 @@ class AppL10nEn extends AppL10n {
   String get startBrowsing => 'Start browsing';
 
   @override
-  String stepOfTotal(int current, int total) {
+  String stepOfTotal(int current, Object total) {
     return 'Step $current of $total';
   }
 
   @override
-  String orderStatusSemantic(String status, int step) {
+  String orderStatusSemantic(String status, Object step) {
     return 'Order status: $status, step $step of 3';
   }
 
@@ -1827,4 +1827,95 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get systemDefault => 'System default';
+
+  @override
+  String get quantityDecrease => 'Decrease quantity';
+
+  @override
+  String get quantityIncrease => 'Increase quantity';
+
+  @override
+  String get quantityLabel => 'Quantity';
+
+  @override
+  String get subtotal => 'Subtotal';
+
+  @override
+  String get pdpAddToCart => 'Add to cart';
+
+  @override
+  String get stockIn => 'In stock';
+
+  @override
+  String get stockOut => 'Out of stock';
+
+  @override
+  String stockLow(int count) {
+    return 'Only $count left';
+  }
+
+  @override
+  String get quantityTitle => 'Select quantity';
+
+  @override
+  String get pdpDescription => 'About this item';
+
+  @override
+  String get commonBack => 'Back';
+
+  @override
+  String get pdpSoldBy => 'Sold by';
+
+  @override
+  String pdpImageGallery(int index, int total) {
+    return 'Image $index of $total';
+  }
+
+  @override
+  String get cartAddedToCart => 'Added to cart';
+
+  @override
+  String get cartStockLimitReached => 'Stock limit reached';
+
+  @override
+  String get cartOutOfStock => 'Out of stock';
+
+  @override
+  String get cartPromoApplied => 'Promo applied';
+
+  @override
+  String get cartPromoInvalid => 'Invalid promo code';
+
+  @override
+  String get cartPromoExpired => 'Promo code expired';
+
+  @override
+  String get cartPromoUsed => 'Promo code already used';
+
+  @override
+  String get cartPromoBelowMinimum => 'Order below minimum for promo';
+
+  @override
+  String get signInTitle => 'Sign in';
+
+  @override
+  String get acceptTerms => 'I accept the terms and conditions';
+
+  @override
+  String get confirmAge => 'I am 18 or older';
+
+  @override
+  String get orContinueWith => 'Or continue with';
+
+  @override
+  String get enterCodeSentToPhone => 'Enter the code sent to your phone';
+
+  @override
+  String get verificationCode => 'Verification code';
+
+  @override
+  String get verify => 'Verify';
+
+  @override
+  String get changePhoneNumber => 'Change phone number';
 }

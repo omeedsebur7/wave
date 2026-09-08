@@ -5,8 +5,8 @@ import 'app_localizations.dart';
 // ignore_for_file: type=lint
 
 /// The translations for Central Kurdish (`ckb`).
-class AppL10nCkb extends AppL10n {
-  AppL10nCkb([String locale = 'ckb']) : super(locale);
+class AppLocalizationsCkb extends AppLocalizations {
+  AppLocalizationsCkb([String locale = 'ckb']) : super(locale);
 
   @override
   String get appName => 'WAVE';
@@ -721,12 +721,12 @@ class AppL10nCkb extends AppL10n {
   }
 
   @override
-  String durationOfMax(int actual, int max) {
+  String durationOfMax(int actual, Object max) {
     return '$actual چرکە لە $max چرکە';
   }
 
   @override
-  String videoTooLong(int actual, int max) {
+  String videoTooLong(int actual, Object max) {
     return 'ئەو ڤیدیۆیە $actual چرکەیە. بۆ $max چرکە یان کەمتر کورتی بکەرەوە و دووبارە هەڵیبژێرە.';
   }
 
@@ -802,7 +802,7 @@ class AppL10nCkb extends AppL10n {
   String get open => 'کردنەوە';
 
   @override
-  String viewsAndSold(int views, int sold) {
+  String viewsAndSold(int views, Object sold) {
     return '$views بینین · $sold فرۆشراوە';
   }
 
@@ -1027,7 +1027,7 @@ class AppL10nCkb extends AppL10n {
   String get listAProductBody => 'وێنە، نرخ و بڕ زیاد بکە.';
 
   @override
-  String versionUpdated(String version, String date) {
+  String versionUpdated(String version, Object date) {
     return 'وەشانی $version · نوێکراوەتەوە لە $date';
   }
 
@@ -1178,12 +1178,12 @@ class AppL10nCkb extends AppL10n {
   String get startBrowsing => 'دەست بە گەڕان بکە';
 
   @override
-  String stepOfTotal(int current, int total) {
+  String stepOfTotal(int current, Object total) {
     return 'هەنگاوی $current لە $total';
   }
 
   @override
-  String orderStatusSemantic(String status, int step) {
+  String orderStatusSemantic(String status, Object step) {
     return 'دۆخی داواکاری: $status، هەنگاوی $step لە ٣';
   }
 
@@ -1834,4 +1834,97 @@ class AppL10nCkb extends AppL10n {
 
   @override
   String get systemDefault => 'بنەڕەتی سیستەم';
+
+  @override
+  String get quantityDecrease => 'کەمکردنەوەی بڕ';
+
+  @override
+  String get quantityIncrease => 'زیادکردنی بڕ';
+
+  @override
+  String get quantityLabel => 'بڕ';
+
+  @override
+  String get subtotal => 'کۆی نرخ';
+
+  @override
+  String get pdpAddToCart => 'زیادکردن بۆ سەبەتە';
+
+  @override
+  String get stockIn => 'لە کۆگا بەردەستە';
+
+  @override
+  String get stockOut => 'لە کۆگا نەماوە';
+
+  @override
+  String stockLow(int count) {
+    return 'تەنها $count دانە ماوە';
+  }
+
+  @override
+  String get quantityTitle => 'هەڵبژاردنی بڕ';
+
+  @override
+  String get pdpDescription => 'دەربارەی ئەم کاڵایە';
+
+  @override
+  String get commonBack => 'گەڕانەوە';
+
+  @override
+  String get pdpSoldBy => 'فرۆشراوە لەلایەن';
+
+  @override
+  String pdpImageGallery(int index, int total) {
+    return 'وێنەی $index لە $total';
+  }
+
+  @override
+  String get cartAddedToCart => 'خرایە سەبەتەوە';
+
+  @override
+  String get cartStockLimitReached => 'گەیشتیتە کۆتا سنووری ستۆک';
+
+  @override
+  String get cartOutOfStock => 'لە ستۆکدا نەماوە';
+
+  @override
+  String get cartPromoApplied => 'کۆدی داشکاندن بەکارهێنرا';
+
+  @override
+  String get cartPromoInvalid => 'کۆدی داشکاندن هەڵەیە';
+
+  @override
+  String get cartPromoExpired => 'کۆدی داشکاندن بەسەرچووە';
+
+  @override
+  String get cartPromoUsed => 'ئەم کۆدە پێشتر بەکارهێنراوە';
+
+  @override
+  String get cartPromoBelowMinimum =>
+      'نرخی داواکارییەکەت کەمترە لە مەرجی کۆدەکە';
+
+  @override
+  String get signInTitle => 'چوونەژوورەوە';
+
+  @override
+  String get acceptTerms => 'ڕازیبوونم بە مەرج و ڕێنماییەکان';
+
+  @override
+  String get confirmAge => 'تەمەنم سەروو ١٨ ساڵە';
+
+  @override
+  String get orContinueWith => 'یان لە ڕێگەی ئەمانەوە بەردەوام بە';
+
+  @override
+  String get enterCodeSentToPhone =>
+      'ئەو کۆدەی بۆ مۆبایلەکەت نێردراوە لێرە بنووسە';
+
+  @override
+  String get verificationCode => 'کۆدی دڵنیابوونەوە';
+
+  @override
+  String get verify => 'دڵنیابوونەوە';
+
+  @override
+  String get changePhoneNumber => 'گۆڕینی ژمارەی مۆبایل';
 }

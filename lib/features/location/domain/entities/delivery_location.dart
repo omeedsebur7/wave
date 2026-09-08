@@ -97,19 +97,35 @@ class DeliveryLocation extends Equatable {
     return location.isValid ? location : null;
   }
 
-  DeliveryLocation copyWith({double? latitude, double? longitude,
-      LocationSource? setBy, String? note, double? accuracyMetres,}) =>
+  // FIXED: Explicitly clears nullable fields to avoid the `?? this.x` trap.
+  DeliveryLocation copyWith({
+    double? latitude,
+    double? longitude,
+    LocationSource? setBy,
+    String? note,
+    bool clearNote = false,
+    double? accuracyMetres,
+    bool clearAccuracy = false,
+  }) =>
       DeliveryLocation(
         latitude: latitude ?? this.latitude,
         longitude: longitude ?? this.longitude,
         setBy: setBy ?? this.setBy,
-        note: note ?? this.note,
-        accuracyMetres: accuracyMetres ?? this.accuracyMetres,
+        note: clearNote ? null : (note ?? this.note),
+        accuracyMetres: clearAccuracy ? null : (accuracyMetres ?? this.accuracyMetres),
         capturedAt: capturedAt,
       );
 
+  // FIXED: Incomplete equality check resolved.
   @override
-  List<Object?> get props => [latitude, longitude, setBy, note];
+  List<Object?> get props => [
+        latitude, 
+        longitude, 
+        setBy, 
+        note, 
+        accuracyMetres, 
+        capturedAt,
+      ];
 }
 
 enum LocationSource {

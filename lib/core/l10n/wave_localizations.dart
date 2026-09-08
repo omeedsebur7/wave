@@ -5,7 +5,7 @@ import 'package:wave/l10n/generated/app_localizations.dart';
 
 abstract final class WaveLocalizations {
   static const List<LocalizationsDelegate<dynamic>> delegates = [
-    AppL10n.delegate,
+    AppLocalizations.delegate,
     _CkbMaterialLocalizationsDelegate(),
     _CkbWidgetsLocalizationsDelegate(),
     _CkbCupertinoLocalizationsDelegate(),

@@ -292,9 +292,6 @@
     "placeholders": {
       "actual": {
         "type": "int"
-      },
-      "max": {
-        "type": "int"
       }
     }
   },
@@ -302,9 +299,6 @@
   "@videoTooLong": {
     "placeholders": {
       "actual": {
-        "type": "int"
-      },
-      "max": {
         "type": "int"
       }
     }
@@ -348,9 +342,6 @@
   "@viewsAndSold": {
     "placeholders": {
       "views": {
-        "type": "int"
-      },
-      "sold": {
         "type": "int"
       }
     }
@@ -468,9 +459,6 @@
     "placeholders": {
       "version": {
         "type": "String"
-      },
-      "date": {
-        "type": "String"
       }
     }
   },
@@ -549,9 +537,6 @@
     "placeholders": {
       "current": {
         "type": "int"
-      },
-      "total": {
-        "type": "int"
       }
     }
   },
@@ -560,10 +545,10 @@
     "placeholders": {
       "status": {
         "type": "String"
-      },
-      "step": {
-        "type": "int"
       }
+    },
+    "step": {
+      "type": "int"
     }
   },
   "signOut": "Sign out",
@@ -921,5 +906,51 @@
     }
   },
   "updateSearchStoreManually": "Search for WAVE in your app store to update.",
-  "systemDefault": "System default"
+  "systemDefault": "System default",
+  "quantityDecrease": "Decrease quantity",
+  "quantityIncrease": "Increase quantity",
+  "quantityLabel": "Quantity",
+  "subtotal": "Subtotal",
+  "pdpAddToCart": "Add to cart",
+  "stockIn": "In stock",
+  "stockOut": "Out of stock",
+  "stockLow": "Only {count} left",
+  "@stockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quantityTitle": "Select quantity",
+  "pdpDescription": "About this item",
+  "commonBack": "Back",
+  "pdpSoldBy": "Sold by",
+  "pdpImageGallery": "Image {index} of {total}",
+  "@pdpImageGallery": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cartAddedToCart": "Added to cart",
+  "cartStockLimitReached": "Stock limit reached",
+  "cartOutOfStock": "Out of stock",
+  "cartPromoApplied": "Promo applied",
+  "cartPromoInvalid": "Invalid promo code",
+  "cartPromoExpired": "Promo code expired",
+  "cartPromoUsed": "Promo code already used",
+  "cartPromoBelowMinimum": "Order below minimum for promo",
+  "signInTitle": "Sign in",
+  "acceptTerms": "I accept the terms and conditions",
+  "confirmAge": "I am 18 or older",
+  "orContinueWith": "Or continue with",
+  "enterCodeSentToPhone": "Enter the code sent to your phone",
+  "verificationCode": "Verification code",
+  "verify": "Verify",
+  "changePhoneNumber": "Change phone number"
 }

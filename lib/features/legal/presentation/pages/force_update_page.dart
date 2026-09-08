@@ -7,13 +7,9 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/services/force_update_service.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 
-/// Force-update wall (§6).
-///
-/// No dismiss and no back. A build below the minimum supported version cannot
-/// safely talk to the backend, so letting someone past this screen produces
-/// confusing failures deeper in the app — an order that silently fails is worse
-/// than a clear wall.
 class ForceUpdatePage extends StatefulWidget {
   const ForceUpdatePage({super.key});
 
@@ -23,13 +19,6 @@ class ForceUpdatePage extends StatefulWidget {
 
 class _ForceUpdatePageState extends State<ForceUpdatePage> {
   bool _launching = false;
-  /// Whether the store link failed, not the words describing it.
-  ///
-  /// This was a `String?` holding an English sentence assigned in two places
-  /// and rendered in a third. Nothing that inspects `Text(...)` arguments can
-  /// catch that shape — the literal is nowhere near the widget — which is how it
-  /// survived a localization pass that caught 250 others. Holding a bool and
-  /// resolving the text in `build` makes it structurally impossible to repeat.
   bool _storeLinkFailed = false;
 
   Future<void> _openStore() async {
@@ -38,9 +27,6 @@ class _ForceUpdatePageState extends State<ForceUpdatePage> {
       _storeLinkFailed = false;
     });
 
-    // The URL comes from Remote Config, so a wrong store link can be corrected
-    // without shipping a build — which matters when the build that needs
-    // correcting is the one nobody can update past.
     final isIos = !kIsWeb && Platform.isIOS;
     final url = getIt<ForceUpdateService>().updateUrl(isIos: isIos);
 
@@ -59,8 +45,6 @@ class _ForceUpdatePageState extends State<ForceUpdatePage> {
     if (!mounted) return;
     setState(() {
       _launching = false;
-      // Never leave the button looking like it did nothing. If the store will
-      // not open, say what to do by hand.
       if (!opened) _storeLinkFailed = true;
     });
   }
@@ -74,45 +58,38 @@ class _ForceUpdatePageState extends State<ForceUpdatePage> {
       child: Scaffold(
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsetsDirectional.all(WaveSpacing.x32), // FIXED
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.system_update, size: 56, color: c.primary),
-                const SizedBox(height: 24),
+                Icon(Icons.system_update, size: WaveSpacing.x64, color: c.primary), // FIXED
+                const SizedBox(height: WaveSpacing.x24), // FIXED
                 Text(
                   context.l10n.updateRequiredTitle,
-                  style: context.texts.headlineMedium,
+                  style: context.texts.headline, // FIXED
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: WaveSpacing.x8), // FIXED
                 Text(
                   context.l10n.updateRequiredBody,
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _launching ? null : _openStore,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(200, 52),
+                const SizedBox(height: WaveSpacing.x24), // FIXED
+                SizedBox(
+                  width: 200,
+                  child: WaveButton( // FIXED: FilledButton -> WaveButton
+                    expand: true,
+                    isLoading: _launching,
+                    label: context.l10n.updateNow,
+                    onPressed: _launching ? null : _openStore,
                   ),
-                  child: _launching
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(context.l10n.updateNow),
                 ),
                 if (_storeLinkFailed) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: WaveSpacing.x12), // FIXED
                   Text(
                     context.l10n.updateSearchStoreManually,
-                    style: context.texts.bodySmall?.copyWith(color: c.warning),
+                    style: context.texts.caption.copyWith(color: c.warning), // FIXED
                     textAlign: TextAlign.center,
                   ),
                 ],

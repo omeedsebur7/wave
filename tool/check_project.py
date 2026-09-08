@@ -1422,7 +1422,7 @@ check('Coverage excludes goldens',
 #
 # `build_runner` is the opposite. This project has no code generation at all:
 # DI is hand-registered (see injector.dart), and there is not one `@freezed`,
-# `@JsonSerializable`, `@InjectableInit` or `part` directive in lib/. CI ran it
+# `@JsonSerializable`, `Init` or `part` directive in lib/. CI ran it
 # twice regardless, contradicting the README and implying codegen was part of
 # the workflow. Checked against the comment-stripped CI text specifically
 # because the comments explaining this decision say "build_runner" themselves —

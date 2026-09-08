@@ -11,10 +11,10 @@ import 'app_localizations_en.dart';
 
 // ignore_for_file: type=lint
 
-/// Callers can lookup localized strings with an instance of AppL10n
-/// returned by `AppL10n.of(context)`.
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
 ///
-/// Applications need to include `AppL10n.delegate()` in their app's
+/// Applications need to include `AppLocalizations.delegate()` in their app's
 /// `localizationDelegates` list, and the locales they support in the app's
 /// `supportedLocales` list. For example:
 ///
@@ -22,8 +22,8 @@ import 'app_localizations_en.dart';
 /// import 'generated/app_localizations.dart';
 ///
 /// return MaterialApp(
-///   localizationsDelegates: AppL10n.localizationsDelegates,
-///   supportedLocales: AppL10n.supportedLocales,
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
 ///   home: MyApplicationHome(),
 /// );
 /// ```
@@ -60,19 +60,20 @@ import 'app_localizations_en.dart';
 /// Select and expand the newly-created Localizations item then, for each
 /// locale your application supports, add a new item and select the locale
 /// you wish to add from the pop-up menu in the Value field. This list should
-/// be consistent with the languages listed in the AppL10n.supportedLocales
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
-abstract class AppL10n {
-  AppL10n(String locale)
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
       : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
-  static AppL10n of(BuildContext context) {
-    return Localizations.of<AppL10n>(context, AppL10n)!;
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppL10n> delegate = _AppL10nDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -1405,13 +1406,13 @@ abstract class AppL10n {
   ///
   /// In en, this message translates to:
   /// **'{actual}s of {max}s'**
-  String durationOfMax(int actual, int max);
+  String durationOfMax(int actual, Object max);
 
   /// No description provided for @videoTooLong.
   ///
   /// In en, this message translates to:
   /// **'That video is {actual}s. Trim it to {max} seconds or less and pick it again.'**
-  String videoTooLong(int actual, int max);
+  String videoTooLong(int actual, Object max);
 
   /// No description provided for @captionHint.
   ///
@@ -1543,7 +1544,7 @@ abstract class AppL10n {
   ///
   /// In en, this message translates to:
   /// **'{views} views · {sold} sold'**
-  String viewsAndSold(int views, int sold);
+  String viewsAndSold(int views, Object sold);
 
   /// No description provided for @wastedAudienceNote.
   ///
@@ -1945,7 +1946,7 @@ abstract class AppL10n {
   ///
   /// In en, this message translates to:
   /// **'Version {version} · updated {date}'**
-  String versionUpdated(String version, String date);
+  String versionUpdated(String version, Object date);
 
   /// No description provided for @versionLabel.
   ///
@@ -2203,13 +2204,13 @@ abstract class AppL10n {
   ///
   /// In en, this message translates to:
   /// **'Step {current} of {total}'**
-  String stepOfTotal(int current, int total);
+  String stepOfTotal(int current, Object total);
 
   /// No description provided for @orderStatusSemantic.
   ///
   /// In en, this message translates to:
   /// **'Order status: {status}, step {step} of 3'**
-  String orderStatusSemantic(String status, int step);
+  String orderStatusSemantic(String status, Object step);
 
   /// No description provided for @signOut.
   ///
@@ -3308,14 +3309,189 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'System default'**
   String get systemDefault;
+
+  /// No description provided for @quantityDecrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease quantity'**
+  String get quantityDecrease;
+
+  /// No description provided for @quantityIncrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase quantity'**
+  String get quantityIncrease;
+
+  /// No description provided for @quantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantityLabel;
+
+  /// No description provided for @subtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotal;
+
+  /// No description provided for @pdpAddToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cart'**
+  String get pdpAddToCart;
+
+  /// No description provided for @stockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'In stock'**
+  String get stockIn;
+
+  /// No description provided for @stockOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get stockOut;
+
+  /// No description provided for @stockLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {count} left'**
+  String stockLow(int count);
+
+  /// No description provided for @quantityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select quantity'**
+  String get quantityTitle;
+
+  /// No description provided for @pdpDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'About this item'**
+  String get pdpDescription;
+
+  /// No description provided for @commonBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get commonBack;
+
+  /// No description provided for @pdpSoldBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold by'**
+  String get pdpSoldBy;
+
+  /// No description provided for @pdpImageGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Image {index} of {total}'**
+  String pdpImageGallery(int index, int total);
+
+  /// No description provided for @cartAddedToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to cart'**
+  String get cartAddedToCart;
+
+  /// No description provided for @cartStockLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock limit reached'**
+  String get cartStockLimitReached;
+
+  /// No description provided for @cartOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get cartOutOfStock;
+
+  /// No description provided for @cartPromoApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Promo applied'**
+  String get cartPromoApplied;
+
+  /// No description provided for @cartPromoInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid promo code'**
+  String get cartPromoInvalid;
+
+  /// No description provided for @cartPromoExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Promo code expired'**
+  String get cartPromoExpired;
+
+  /// No description provided for @cartPromoUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Promo code already used'**
+  String get cartPromoUsed;
+
+  /// No description provided for @cartPromoBelowMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Order below minimum for promo'**
+  String get cartPromoBelowMinimum;
+
+  /// No description provided for @signInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInTitle;
+
+  /// No description provided for @acceptTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'I accept the terms and conditions'**
+  String get acceptTerms;
+
+  /// No description provided for @confirmAge.
+  ///
+  /// In en, this message translates to:
+  /// **'I am 18 or older'**
+  String get confirmAge;
+
+  /// No description provided for @orContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Or continue with'**
+  String get orContinueWith;
+
+  /// No description provided for @enterCodeSentToPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code sent to your phone'**
+  String get enterCodeSentToPhone;
+
+  /// No description provided for @verificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get verificationCode;
+
+  /// No description provided for @verify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get verify;
+
+  /// No description provided for @changePhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change phone number'**
+  String get changePhoneNumber;
 }
 
-class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
-  const _AppL10nDelegate();
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
 
   @override
-  Future<AppL10n> load(Locale locale) {
-    return SynchronousFuture<AppL10n>(lookupAppL10n(locale));
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
   }
 
   @override
@@ -3323,22 +3499,22 @@ class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
       <String>['ar', 'ckb', 'en'].contains(locale.languageCode);
 
   @override
-  bool shouldReload(_AppL10nDelegate old) => false;
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
-AppL10n lookupAppL10n(Locale locale) {
+AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'ar':
-      return AppL10nAr();
+      return AppLocalizationsAr();
     case 'ckb':
-      return AppL10nCkb();
+      return AppLocalizationsCkb();
     case 'en':
-      return AppL10nEn();
+      return AppLocalizationsEn();
   }
 
   throw FlutterError(
-      'AppL10n.delegate failed to load unsupported locale "$locale". This is likely '
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
       'an issue with the localizations generation tool. Please file an issue '
       'on GitHub with a reproducible sample app and the gen-l10n configuration '
       'that was used.');

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 
-/// Failure and empty states get direction, not mood. Say what happened and
-/// what to do about it; an empty screen is an invitation to act.
 class WaveErrorView extends StatelessWidget {
   const WaveErrorView({
     required this.title,
@@ -23,8 +23,6 @@ class WaveErrorView extends StatelessWidget {
     super.key,
   }) : _isEmpty = true;
 
-  /// An empty state is an invitation to act, not a failure report, so its
-  /// default action reads differently.
   final bool _isEmpty;
 
   final String title;
@@ -38,25 +36,23 @@ class WaveErrorView extends StatelessWidget {
     final c = context.waveColors;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsetsDirectional.all(WaveSpacing.x32), // FIXED
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: c.textSecondary),
-            const SizedBox(height: 16),
-            Text(title, style: context.texts.titleMedium,
+            Icon(icon, size: WaveSpacing.x40, color: c.textSecondary), // FIXED
+            const SizedBox(height: WaveSpacing.x16), // FIXED
+            Text(title, style: context.texts.title, // FIXED
                 textAlign: TextAlign.center,),
-            const SizedBox(height: 8),
-            Text(message, style: context.texts.bodySmall,
+            const SizedBox(height: WaveSpacing.x8), // FIXED
+            Text(message, style: context.texts.caption, // FIXED
                 textAlign: TextAlign.center,),
             if (onRetry != null) ...[
-              const SizedBox(height: 20),
-              FilledButton(
+              const SizedBox(height: WaveSpacing.x20), // FIXED
+              WaveButton( // FIXED: FilledButton -> WaveButton
                 onPressed: onRetry,
-                child: Text(
-                  retryLabel ??
-                      (_isEmpty ? context.l10n.getStarted : context.l10n.retry),
-                ),
+                label: retryLabel ??
+                    (_isEmpty ? context.l10n.getStarted : context.l10n.retry),
               ),
             ],
           ],

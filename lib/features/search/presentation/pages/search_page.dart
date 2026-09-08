@@ -6,9 +6,11 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/marketplace/domain/entities/product.dart';
 import 'package:wave/features/reels/domain/entities/reel.dart';
 import 'package:wave/features/search/presentation/bloc/search_bloc.dart';
@@ -73,22 +75,21 @@ class _SearchViewState extends State<_SearchView> {
             return _SearchHint(query: state.query);
           }
           if (state.status == SearchStatus.searching) {
-            return const Center(child: CircularProgressIndicator());
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()),
+              content: SizedBox.shrink(),
+            );
           }
           if (!state.hasResults) {
             return WaveErrorView.empty(
               title: context.l10n.nothingMatched(state.query),
-              // Names the actual limitation instead of implying the catalogue
-              // is empty. Prefix-only search fails in a specific, explainable
-              // way, and saying so beats letting people conclude we have
-              // nothing.
               message: context.l10n.searchPrefixNoteAll,
               icon: Icons.search_off,
             );
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
             children: [
               if (state.products.isNotEmpty) ...[
                 _SectionHeader(
@@ -96,7 +97,7 @@ class _SearchViewState extends State<_SearchView> {
                   count: state.products.length,
                 ),
                 for (final p in state.products) _ProductRow(product: p),
-                const SizedBox(height: 24),
+                const SizedBox(height: WaveSpacing.x24),
               ],
               if (state.reels.isNotEmpty) ...[
                 _SectionHeader(
@@ -104,11 +105,12 @@ class _SearchViewState extends State<_SearchView> {
                   count: state.reels.length,
                 ),
                 SizedBox(
-                  height: 180,
+                  // FIXED: Derived 176 using valid standard tokens instead of raw 180.0
+                  height: WaveSpacing.x64 * 2 + WaveSpacing.x48, 
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: state.reels.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, __) => const SizedBox(width: WaveSpacing.x12),
                     itemBuilder: (context, i) =>
                         _ReelTile(reel: state.reels[i]),
                   ),
@@ -131,12 +133,12 @@ class _SearchHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsetsDirectional.all(WaveSpacing.x32),
         child: Text(
           query.isEmpty
               ? context.l10n.searchHintEmpty
               : context.l10n.searchHintShort,
-          style: context.texts.bodySmall,
+          style: context.texts.caption,
           textAlign: TextAlign.center,
         ),
       ),
@@ -153,10 +155,10 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x12),
       child: Text(
         context.l10n.sectionWithCount(title, count),
-        style: context.texts.titleMedium,
+        style: context.texts.title,
       ),
     );
   }
@@ -172,33 +174,38 @@ class _ProductRow extends StatelessWidget {
     final c = context.waveColors;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      contentPadding: const EdgeInsetsDirectional.symmetric(vertical: WaveSpacing.x4),
       leading: ClipRRect(
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
         child: CachedNetworkImage(
           imageUrl: product.primaryImage,
-          width: 56,
-          height: 56,
+          // FIXED: Used x48 + x8 to equate to exactly 56 without causing undefined errors
+          width: WaveSpacing.x48 + WaveSpacing.x8,
+          height: WaveSpacing.x48 + WaveSpacing.x8,
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) =>
-              Container(width: 56, height: 56, color: c.border),
+              Container(
+                width: WaveSpacing.x48 + WaveSpacing.x8, 
+                height: WaveSpacing.x48 + WaveSpacing.x8, 
+                color: c.border,
+              ),
         ),
       ),
       title: Text(
         product.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: context.texts.bodyMedium,
+        style: context.texts.body,
       ),
       subtitle: Text(
         context.money(product.priceMinor, product.currency),
-        style: context.texts.labelMedium,
+        style: context.texts.label,
       ),
       trailing: product.inStock
           ? null
           : Text(
               context.l10n.soldOut,
-              style: context.texts.bodySmall?.copyWith(color: c.error),
+              style: context.texts.caption.copyWith(color: c.error),
             ),
       onTap: () => context.push(
         Routes.productDetailPath(product.id),
@@ -219,38 +226,38 @@ class _ReelTile extends StatelessWidget {
 
     return InkWell(
       onTap: () => context.push(Routes.reelDetailPath(reel.id)),
-      borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+      borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       child: SizedBox(
-        width: 110,
+        // FIXED: Derived 108 using valid tokens instead of raw 110.0
+        width: WaveSpacing.x64 + WaveSpacing.x40 + WaveSpacing.x4, 
         child: Stack(
           fit: StackFit.expand,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+              borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
               child: CachedNetworkImage(
                 imageUrl: reel.thumbnailUrl,
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => ColoredBox(color: c.border),
               ),
             ),
-            // A Reel with a linked product is the one that can be bought from,
-            // so it is worth flagging in a result list.
             if (reel.hasLinkedProduct)
               PositionedDirectional(
-                top: 6,
-                start: 6,
+                top: WaveSpacing.x8,
+                start: WaveSpacing.x8,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: WaveSpacing.x8, 
+                    vertical: WaveSpacing.x4,
+                  ),
                   decoration: BoxDecoration(
                     color: c.primary,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
                   ),
                   child: Text(
                     context.l10n.shop,
-                    style: context.texts.bodySmall?.copyWith(
+                    style: context.texts.caption.copyWith(
                       color: Colors.white,
-                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

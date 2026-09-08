@@ -1,323 +1,625 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:wave/app/di/injector.dart';
-import 'package:wave/app/router/routes.dart';
-import 'package:wave/core/l10n_extension.dart';
+import 'package:wave/core/error/failure_to_state.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
-import 'package:wave/core/utils/money.dart';
-import 'package:wave/core/widgets/directional_chevron.dart';
+import 'package:wave/core/theme/tokens/wave_motion.dart';
+import 'package:wave/core/theme/wave_hero_tags.dart';
 import 'package:wave/core/widgets/trust_badge.dart';
-import 'package:wave/core/widgets/wave_error_view.dart';
-import 'package:wave/core/widgets/wave_skeleton.dart';
+import 'package:wave/core/widgets/wave_quantity_stepper.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_hero.dart';
+import 'package:wave/design_system/components/wave_price.dart';
+import 'package:wave/design_system/components/wave_skeletons.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
+import 'package:wave/design_system/components/wave_ugc_text.dart';
 import 'package:wave/features/cart/presentation/bloc/cart_bloc.dart';
 import 'package:wave/features/marketplace/domain/entities/product.dart';
 import 'package:wave/features/marketplace/presentation/bloc/product_detail_bloc.dart';
-import 'package:wave/features/moderation/domain/entities/report.dart';
-import 'package:wave/features/moderation/presentation/widgets/report_sheet.dart';
-import 'package:wave/features/reviews/presentation/widgets/review_list.dart';
+import 'package:wave/l10n/generated/app_localizations.dart';
 
-/// Product detail.
-///
-/// The static pre-rendered image is the real default at launch, not a fallback
-/// (§3.6). model_viewer_plus is Phase 2 — turning it on before a pipeline
-/// exists that produces usable .glb assets would ship an empty viewer, which is
-/// worse than a good photograph.
 class ProductDetailPage extends StatelessWidget {
-  const ProductDetailPage({required this.productId, this.preloaded, super.key});
+  const ProductDetailPage({
+    required this.productId,
+    this.preloaded,
+    this.heroScope = 'main',
+    super.key,
+  });
 
   final String productId;
-
-  /// Handed over by the grid when available, so the page paints instantly
-  /// rather than flashing a skeleton for data the previous screen already had.
   final Product? preloaded;
+  final String heroScope;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<ProductDetailBloc>()
         ..add(ProductDetailRequested(productId, preloaded: preloaded)),
-      child: const _ProductDetailView(),
+      child: _ProductDetailView(productId: productId, heroScope: heroScope),
     );
   }
 }
 
 class _ProductDetailView extends StatelessWidget {
-  const _ProductDetailView();
+  const _ProductDetailView({required this.productId, required this.heroScope});
+
+  final String productId;
+  final String heroScope;
+
+  void _retry(BuildContext context) =>
+      context.read<ProductDetailBloc>().add(ProductDetailRequested(productId));
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProductDetailBloc, ProductDetailState>(
       builder: (context, state) {
         final product = state.product;
+        final view = _map(context, state);
 
-        if (product == null) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: state.status == ProductDetailStatus.failure
-                ? WaveErrorView(
-                    title: context.l10n.productNotFound,
-                    message: context.l10n.productNotFoundBody,
-                    icon: Icons.remove_shopping_cart_outlined,
-                    retryLabel: context.l10n.backToTheMarket,
-                    onRetry: () => context.go(Routes.marketplace),
-                  )
-                : const _DetailSkeleton(),
-          );
-        }
-
-        return _Loaded(state: state, product: product);
+        return Scaffold(
+          backgroundColor: context.waveColors.background,
+          body: WaveStateView(
+            state: view,
+            content: product == null
+                ? const SizedBox.shrink()
+                : _Body(
+                    product: product,
+                    productId: productId,
+                    heroScope: heroScope,
+                  ),
+          ),
+          bottomNavigationBar: view is WaveContent && product != null
+              ? _StickyCta(product: product)
+              : null,
+        );
       },
+    );
+  }
+
+  WaveState _map(BuildContext context, ProductDetailState s) {
+    final failure = s.failure;
+
+    if (s.status == ProductDetailStatus.failure && failure != null) {
+      final kind = waveFailureKind(failure);
+      return WaveFailure(
+        kind,
+        onRetry: isRetryable(kind) ? () => _retry(context) : null,
+      );
+    }
+
+    if (s.product == null) {
+      return WaveLoading(WaveSkeletons.productDetail(context));
+    }
+
+    return const WaveContent();
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.product,
+    required this.productId,
+    required this.heroScope,
+  });
+
+  final Product product;
+  final String productId;
+  final String heroScope;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.texts;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
+
+    return CustomScrollView(
+      slivers: [
+        _PdpAppBar(
+          product: product,
+          productId: productId,
+          heroScope: heroScope,
+        ),
+        SliverPadding(
+          padding: EdgeInsetsDirectional.all(s.x16),
+          sliver: SliverList.list(
+            children: [
+              WaveUgcText(product.title, style: t.headline),
+              SizedBox(height: s.x8),
+              WavePrice(amountMinor: product.priceMinor),
+              SizedBox(height: s.x8),
+              StockLine(product: product),
+              SizedBox(height: s.x24),
+              _SellerBlock(product: product),
+              SizedBox(height: s.x24),
+              Text(l.pdpDescription, style: t.title),
+              SizedBox(height: s.x8),
+              WaveUgcText(product.description, style: t.body),
+              SizedBox(height: s.x32),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _Loaded extends StatelessWidget {
-  const _Loaded({required this.state, required this.product});
+class StockLine extends StatelessWidget {
+  const StockLine({required this.product, super.key});
 
-  final ProductDetailState state;
   final Product product;
 
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final t = context.texts;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 360,
-            pinned: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share_outlined),
-                tooltip: context.l10n.shareThisItem,
-                onPressed: () => Share.share(
-                  // A deep link, so the recipient lands on the product rather
-                  // than the app's front page (§5.2).
-                  '${product.title} on WAVE\n'
-                  'https://wave.app${Routes.productDetailPath(product.id)}',
-                  subject: product.title,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.flag_outlined),
-                tooltip: context.l10n.reportThisListing,
-                onPressed: () => showReportSheet(
-                  context,
-                  targetType: ReportTargetType.product,
-                  targetId: product.id,
-                ),
+    final (IconData icon, String text, Color color) = switch (product) {
+      _ when !product.inStock => (
+          Icons.remove_shopping_cart_outlined,
+          l.stockOut,
+          c.error,
+        ),
+      _ when product.isLowStock => (
+          Icons.local_fire_department_outlined,
+          l.stockLow(product.stock),
+          c.warning,
+        ),
+      _ => (Icons.check_circle_outline, l.stockIn, c.success),
+    };
+
+    return Row(
+      children: [
+        Icon(icon, size: s.x16, color: color),
+        SizedBox(width: s.x4),
+        Text(text, style: t.caption.copyWith(color: color)),
+      ],
+    );
+  }
+}
+
+class QuantitySheet extends StatelessWidget {
+  const QuantitySheet({
+    required this.product,
+    required this.quantity,
+    super.key,
+  });
+
+  final Product product;
+  final ValueNotifier<int> quantity;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final t = context.texts;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
+
+    return ValueListenableBuilder<int>(
+      valueListenable: quantity,
+      builder: (context, qty, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          WaveUgcText(
+            product.title,
+            style: t.body,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: s.x8),
+          StockLine(product: product),
+          SizedBox(height: s.x24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(l.quantityLabel, style: t.bodyStrong),
+              WaveQuantityStepper(
+                value: qty,
+                max: product.stock,
+                onChanged: (v) => quantity.value = v,
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: product.imageUrls.isEmpty
-                  ? ColoredBox(color: c.border)
-                  : PageView.builder(
-                      itemCount: product.imageUrls.length,
-                      itemBuilder: (_, i) => CachedNetworkImage(
-                        imageUrl: product.imageUrls[i],
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => ColoredBox(color: c.border),
-                      ),
-                    ),
-            ),
           ),
-
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList.list(
-              children: [
-                Text(product.title, style: context.texts.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  context.money(product.priceMinor, product.currency),
-                  style: context.texts.displayLarge,
-                ),
-                const SizedBox(height: 8),
-
-                if (!product.inStock)
-                  _StockLine(text: context.l10n.outOfStock, color: c.error)
-                else if (product.isLowStock)
-                  _StockLine(
-                    text: context.l10n.lowStockCount(product.stock),
-                    color: c.warning,
-                  )
-                else
-                  _StockLine(text: context.l10n.inStock, color: c.success),
-
-                const SizedBox(height: 20),
-
-                // The seller card sits above the description on purpose: who
-                // you are buying from is the question a buyer is actually
-                // asking on this screen.
-                InkWell(
-                  onTap: () =>
-                      context.push(Routes.sellerProfilePath(product.sellerId)),
-                  borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: c.border),
-                      borderRadius:
-                          BorderRadius.circular(WaveSurfaces.radiusCard),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: c.border,
-                          child: Text(
-                            product.sellerName.isEmpty
-                                ? '?'
-                                : product.sellerName[0].toUpperCase(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product.sellerName,
-                                style: context.texts.labelMedium,
-                              ),
-                              const SizedBox(height: 4),
-                              TrustBadge(
-                                tier: product.sellerTier,
-                                isKycVerified: product.sellerKycVerified,
-                              ),
-                            ],
-                          ),
-                        ),
-                        DirectionalChevron(color: c.textSecondary),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                Text(context.l10n.aboutThisItem,
-                    style: context.texts.titleMedium,),
-                const SizedBox(height: 8),
-                Text(product.description, style: context.texts.bodyMedium),
-
-                const SizedBox(height: 32),
-                Text(context.l10n.reviews, style: context.texts.titleMedium),
-                const SizedBox(height: 8),
-                ReviewList(
-                  reviews: state.reviews,
-                  average: state.summary.average,
-                  distribution: state.summary.distribution,
-                ),
-
-                const SizedBox(height: 96),
-              ],
-            ),
+          SizedBox(height: s.x24),
+          Divider(color: c.divider),
+          SizedBox(height: s.x16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(l.subtotal, style: t.body),
+              WavePrice(amountMinor: product.priceMinor * qty),
+            ],
           ),
         ],
       ),
-
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border(top: BorderSide(color: c.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: product.inStock
-                      ? () => _addToCart(context, showConfirmation: true)
-                      : null,
-                  style:
-                      OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
-                  child: Text(context.l10n.addToCart),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: product.inStock
-                      ? () {
-                          _addToCart(context, showConfirmation: false);
-                          context.push(Routes.checkout);
-                        }
-                      : null,
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                  child: Text(context.l10n.buyNow),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
+}
 
-  void _addToCart(BuildContext context, {required bool showConfirmation}) {
-    context.read<CartBloc>().add(CartItemAdded(product));
-    if (!showConfirmation) return;
+class _StickyCta extends StatelessWidget {
+  const _StickyCta({required this.product});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.addedToCart),
-        action: SnackBarAction(
-          label: context.l10n.viewCart,
-          onPressed: () => context.push(Routes.cart),
+  final Product product;
+
+  Future<void> _openQuantitySheet(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final cart = context.read<CartBloc>();
+    final quantity = ValueNotifier<int>(1);
+
+    try {
+      final chosen = await WaveSheet.show<int>(
+        context: context,
+        title: l.quantityTitle,
+        builder: (_) => QuantitySheet(product: product, quantity: quantity),
+        footer: ValueListenableBuilder<int>(
+          valueListenable: quantity,
+          builder: (sheetContext, qty, _) => WaveButton(
+            label: l.pdpAddToCart,
+            expand: true,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.of(sheetContext).pop(qty);
+            },
+          ),
+        ),
+      );
+
+      if (chosen == null) return;
+      cart.add(CartItemAdded(product, quantity: chosen));
+    } finally {
+      quantity.dispose();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.divider)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(s.x16, s.x12, s.x16, s.x12),
+          child: WaveButton(
+            label: product.inStock ? l.pdpAddToCart : l.stockOut,
+            expand: true,
+            onPressed:
+                product.inStock ? () => _openQuantitySheet(context) : null,
+          ),
         ),
       ),
     );
   }
 }
 
-class _StockLine extends StatelessWidget {
-  const _StockLine({required this.text, required this.color});
+class _PdpAppBar extends StatelessWidget {
+  const _PdpAppBar({
+    required this.product,
+    required this.productId,
+    required this.heroScope,
+  });
 
-  final String text;
-  final Color color;
+  final Product product;
+  final String productId;
+  final String heroScope;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.circle, size: 8, color: color),
-        const SizedBox(width: 6),
-        Text(text, style: context.texts.bodySmall?.copyWith(color: color)),
-      ],
+    final c = context.waveColors;
+    final t = context.texts;
+    final l = AppLocalizations.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final expanded = width * 5 / 4;
+
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: expanded,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: _ScrimIconButton(
+        icon: Icons.arrow_back,
+        tooltip: l.commonBack,
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final collapsed = MediaQuery.paddingOf(context).top + kToolbarHeight;
+          final range = expanded - collapsed;
+          final t01 = range <= 0
+              ? 1.0
+              : (1 - (constraints.maxHeight - collapsed) / range)
+                  .clamp(0.0, 1.0);
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              _Gallery(
+                product: product,
+                productId: productId,
+                heroScope: heroScope,
+              ),
+              IgnorePointer(
+                child: Opacity(
+                  opacity: Curves.easeIn.transform(t01),
+                  child: ColoredBox(color: c.surface),
+                ),
+              ),
+              if (t01 > 0.5)
+                PositionedDirectional( // FIXED: Replaced Positioned with PositionedDirectional (§9)
+                  bottom: 0,
+                  start: 0,
+                  end: 0,
+                  height: collapsed,
+                  child: Opacity(
+                    opacity: ((t01 - 0.5) * 2).clamp(0.0, 1.0),
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          start: context.spacing.x64,
+                          end: context.spacing.x16,
+                        ),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: WaveUgcText(
+                            product.title,
+                            style: t.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
-class _DetailSkeleton extends StatelessWidget {
-  const _DetailSkeleton();
+class _ScrimIconButton extends StatelessWidget {
+  const _ScrimIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: const [
-        WaveSkeleton(width: double.infinity, height: 320, radius: 0),
-        Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              WaveSkeleton(width: 220, height: 24),
-              SizedBox(height: 12),
-              WaveSkeleton(width: 140, height: 32),
-              SizedBox(height: 24),
-              WaveSkeleton(width: double.infinity, height: 72,
-                  radius: WaveSurfaces.radiusCard,),
-            ],
-          ),
+    final c = context.waveColors;
+    final s = context.spacing;
+
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(horizontal: s.x4),
+      child: Material(
+        color: c.scrim,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: IconButton(
+          icon: Icon(icon),
+          color: c.onScrim,
+          tooltip: tooltip,
+          onPressed: onPressed,
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _Gallery extends StatefulWidget {
+  const _Gallery({
+    required this.product,
+    required this.productId,
+    required this.heroScope,
+  });
+
+  final Product product;
+  final String productId;
+  final String heroScope;
+
+  @override
+  State<_Gallery> createState() => _GalleryState();
+}
+
+class _GalleryState extends State<_Gallery> {
+  final _controller = PageController();
+  int _index = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
+    final images = widget.product.imageUrls;
+
+    if (images.isEmpty) {
+      return ColoredBox(
+        color: c.surfaceSunken,
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          size: s.x48,
+          color: c.textTertiary,
+        ),
+      );
+    }
+
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final target = (MediaQuery.sizeOf(context).width * dpr).round();
+
+    return RepaintBoundary(
+      child: Semantics(
+        label: l.pdpImageGallery(_index + 1, images.length),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PageView.builder(
+              controller: _controller,
+              itemCount: images.length,
+              onPageChanged: (i) => setState(() => _index = i),
+              itemBuilder: (context, i) {
+                final image = CachedNetworkImage(
+                  imageUrl: images[i],
+                  fit: BoxFit.cover,
+                  memCacheWidth: target,
+                  fadeInDuration:
+                      WaveMotion.resolve(context, context.motion.base),
+                  placeholder: (_, __) => ColoredBox(color: c.skeletonBase),
+                  errorWidget: (_, __, ___) => ColoredBox(
+                    color: c.surfaceSunken,
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: c.textTertiary,
+                    ),
+                  ),
+                );
+
+                return i == 0
+                    ? WaveHero(
+                        tag: WaveHeroTags.productImage(
+                          widget.productId,
+                          scope: widget.heroScope,
+                        ),
+                        fromRadius: context.surfaces.radiusCard,
+                        toRadius: 0,
+                        child: image,
+                      )
+                    : image;
+              },
+            ),
+            if (images.length > 1)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(bottom: s.x16),
+                  child: _Dots(count: images.length, index: _index),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Dots extends StatelessWidget {
+  const _Dots({required this.count, required this.index});
+
+  final int count;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final s = context.spacing;
+
+    return ExcludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(count, (i) {
+          final active = i == index;
+          return AnimatedContainer(
+            duration: WaveMotion.resolve(context, context.motion.fast),
+            curve: context.motion.standard,
+            margin: EdgeInsetsDirectional.symmetric(horizontal: s.x2),
+            width: active ? s.x16 : s.x8,
+            height: s.x8,
+            decoration: BoxDecoration(
+              color: active ? c.onScrim : c.onScrim.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(context.surfaces.radiusFull),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _SellerBlock extends StatelessWidget {
+  const _SellerBlock({required this.product});
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final t = context.texts;
+    final s = context.spacing;
+    final l = AppLocalizations.of(context);
+    final name = product.sellerName;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
+        boxShadow: c.shadowResting,
+      ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.all(s.x12),
+        child: Row(
+          children: [
+            Container(
+              width: s.x40,
+              height: s.x40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: c.accentSubtle,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                name.isEmpty ? '?' : name.characters.first,
+                style: t.label.copyWith(color: c.accent),
+              ),
+            ),
+            SizedBox(width: s.x12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.pdpSoldBy, style: t.caption),
+                  SizedBox(height: s.x2),
+                  WaveUgcText(
+                    name,
+                    style: t.bodyStrong,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: s.x4),
+                  TrustBadge(
+                    tier: product.sellerTier,
+                    isKycVerified: product.sellerKycVerified,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

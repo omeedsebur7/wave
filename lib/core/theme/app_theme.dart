@@ -1,26 +1,28 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:wave/core/theme/wave_colors.dart';
+import 'package:wave/core/theme/tokens/wave_colors.dart';
+import 'package:wave/core/theme/tokens/wave_motion.dart';
+import 'package:wave/core/theme/tokens/wave_spacing.dart';
+import 'package:wave/core/theme/tokens/wave_typography.dart';
 import 'package:wave/core/theme/wave_surfaces.dart';
 import 'package:wave/core/theme/wave_trust_colors.dart';
-import 'package:wave/core/theme/wave_typography.dart';
 
-/// Builds the two themes from the token extensions. Nothing here invents a
-/// colour — every value traces back to §3.2 / §3.7.
 abstract final class AppTheme {
-  static ThemeData light(Locale locale) {
-    final c = WaveColors.light();
-    final trust = WaveTrustColors.light();
-    final surfaces = WaveSurfaces.light(c.accentGlow);
-    return _build(Brightness.light, c, trust, surfaces, locale);
-  }
+  static ThemeData light(Locale locale) => _build(
+        Brightness.light,
+        WaveColors.light(),
+        WaveTrustColors.light(),
+        WaveSurfaces.standard(),
+        locale,
+      );
 
-  static ThemeData dark(Locale locale) {
-    final c = WaveColors.dark();
-    final trust = WaveTrustColors.dark();
-    final surfaces = WaveSurfaces.dark(c.accentGlow);
-    return _build(Brightness.dark, c, trust, surfaces, locale);
-  }
+  static ThemeData dark(Locale locale) => _build(
+        Brightness.dark,
+        WaveColors.dark(),
+        WaveTrustColors.dark(),
+        WaveSurfaces.standard(),
+        locale,
+      );
 
   static ThemeData _build(
     Brightness brightness,
@@ -29,85 +31,227 @@ abstract final class AppTheme {
     WaveSurfaces surfaces,
     Locale locale,
   ) {
-    final text = WaveTypography.textTheme(c.textPrimary, c.textSecondary, locale);
+    final typography =
+        WaveTextStyles.forLocale(locale, c.textPrimary, c.textSecondary);
+    final spacing = WaveSpacing.standard();
+    final motion = WaveMotion.standard();
+    final isLight = brightness == Brightness.light;
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       scaffoldBackgroundColor: c.background,
+
       colorScheme: ColorScheme(
         brightness: brightness,
-        primary: c.primary,
-        onPrimary: brightness == Brightness.light
-            ? AppColorsOn.onDark
-            : AppColorsOn.onLight,
-        secondary: c.accentInteractive,
-        onSecondary: AppColorsOn.onDark,
+        primary: c.accent,
+        onPrimary: c.onAccent,
+        secondary: c.accent,
+        onSecondary: c.onAccent,
+        tertiary: c.accent,
+        onTertiary: c.onAccent,
         error: c.error,
-        onError: AppColorsOn.onDark,
+        onError: c.onError,
         surface: c.surface,
         onSurface: c.textPrimary,
-        outline: c.border,
+        outline: c.borderInput,
+        surfaceTint: Colors.transparent,
+        onSurfaceVariant: c.textSecondary,
+        outlineVariant: c.divider,
+        surfaceContainerLowest: c.background,
+        surfaceContainerLow: c.surface,
+        surfaceContainer: c.surfaceRaised,
+        surfaceContainerHigh: c.surfaceRaised,
+        surfaceContainerHighest: c.surfaceRaised,
+        inverseSurface: c.textPrimary,
+        onInverseSurface: c.surface,
+        shadow: c.shadow,
+        scrim: c.scrim,
       ),
-      textTheme: text,
-      fontFamily: WaveFonts.bodyFor(locale),
-      dividerColor: c.border,
-      // Minimum 48x48dp touch targets everywhere (§3.5).
+
+      textTheme: typography.toTextTheme(),
+      dividerColor: c.divider,
       materialTapTargetSize: MaterialTapTargetSize.padded,
+
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.surface,
+        foregroundColor: c.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: c.shadow,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: c.textPrimary, size: spacing.x24),
+        titleTextStyle: typography.title,
+      ),
+
+      dividerTheme: DividerThemeData(
+        color: c.divider,
+        thickness: 1,
+        space: 0,
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: c.surface,
+        hintStyle: typography.body.copyWith(color: c.textTertiary),
+        labelStyle: typography.body.copyWith(color: c.textSecondary),
+        errorStyle: typography.caption.copyWith(color: c.error),
+        contentPadding: EdgeInsetsDirectional.symmetric(
+          horizontal: spacing.x16,
+          vertical: spacing.x12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.borderInput),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.borderInput),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.borderFocus, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.error, width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+          borderSide: BorderSide(color: c.divider),
+        ),
+      ),
+
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(64, 48),
+          minimumSize: Size(spacing.x64, spacing.controlLg),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+            borderRadius: BorderRadius.circular(surfaces.radiusButton),
           ),
-          textStyle: text.labelMedium,
+          textStyle: typography.label,
+          animationDuration: motion.fast,
         ),
       ),
+
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+        style: IconButton.styleFrom(
+          minimumSize: Size(spacing.minTapTarget, spacing.minTapTarget),
+        ),
       ),
-      bottomSheetTheme: BottomSheetThemeData(
+
+      // The sort chips sit on the landing screen and were running on Material
+      // defaults: their radius, selected colour and label style all came from
+      // outside the design system.
+      chipTheme: ChipThemeData(
         backgroundColor: c.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(WaveSurfaces.radiusSheet),
+        selectedColor: c.accentSubtle,
+        disabledColor: c.surfaceSunken,
+        labelStyle: typography.label.copyWith(color: c.textSecondary),
+        secondaryLabelStyle: typography.label.copyWith(color: c.accent),
+        side: BorderSide(color: c.divider),
+        showCheckmark: false,
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: spacing.x12,
+          vertical: spacing.x8,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusFull),
+        ),
+      ),
+
+      // WaveButton's loading spinner and every pull-to-refresh indicator.
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.accent,
+        linearTrackColor: c.surfaceSunken,
+        circularTrackColor: c.surfaceSunken,
+      ),
+
+      // Every icon-only control carries a tooltip for a11y, so this is a more
+      // visible surface than it looks.
+      tooltipTheme: TooltipThemeData(
+        textStyle: typography.caption.copyWith(color: c.surface),
+        decoration: BoxDecoration(
+          color: c.textPrimary,
+          borderRadius: BorderRadius.circular(surfaces.radiusChip),
+        ),
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: spacing.x8,
+          vertical: spacing.x4,
+        ),
+      ),
+
+      // WaveButton drives all four variants through TextButton + ButtonStyle,
+      // so this only affects raw TextButtons in unmigrated code — which is
+      // exactly where an un-tokenised default would go unnoticed.
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: c.accent,
+          textStyle: typography.label,
+          minimumSize: Size(spacing.x64, spacing.controlMd),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(surfaces.radiusButton),
           ),
         ),
       ),
-      cardTheme: CardThemeData(
-        color: c.surface,
-        elevation: 0,
+
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.surfaceRaised, // چاککردنی ئەو مەرجەی کە دووبارە بووبووەوە
+        elevation: isLight ? 16 : 0,
+        shadowColor: c.shadow,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
-          side: BorderSide(color: c.border),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(surfaces.radiusSheet),
+          ),
         ),
       ),
+
+      cardTheme: CardThemeData(
+        color: isLight ? c.surface : c.surfaceRaised,
+        elevation: isLight ? 4 : 0,
+        shadowColor: c.shadow,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusCard),
+        ),
+      ),
+      
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: c.textPrimary,
+        contentTextStyle: typography.body.copyWith(color: c.surface),
+        actionTextColor: c.accent,
+        elevation: 0,
+        insetPadding: EdgeInsets.all(spacing.x16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(surfaces.radiusButton),
+        ),
+      ),
+
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-      extensions: [c, trust, surfaces],
+
+      extensions: [c, trust, surfaces, spacing, motion, typography],
     );
   }
 }
 
-/// The only two "raw" colours in the system: pure black/white used as
-/// foreground on a filled button. Both are contrast-checked against the
-/// primary tokens they sit on.
-abstract final class AppColorsOn {
-  static const onDark = Color(0xFFFFFFFF);
-  static const onLight = Color(0xFF0B0F19);
-}
-
-/// Ergonomic accessors so widgets read `context.waveColors.primary` rather
-/// than the full `Theme.of(context).extension<...>()!` incantation.
 extension WaveThemeX on BuildContext {
-  WaveColors get waveColors => Theme.of(this).extension<WaveColors>()!;
-  WaveTrustColors get trustColors =>
-      Theme.of(this).extension<WaveTrustColors>()!;
-  WaveSurfaces get surfaces => Theme.of(this).extension<WaveSurfaces>()!;
-  TextTheme get texts => Theme.of(this).textTheme;
+  WaveColors get waveColors => WaveColors.of(this);
+  WaveTrustColors get trustColors => WaveTrustColors.of(this);
+  WaveSurfaces get surfaces => WaveSurfaces.of(this);
+  WaveSpacing get spacing => WaveSpacing.of(this);
+  WaveMotion get motion => WaveMotion.of(this);
+  WaveTextStyles get texts => WaveTextStyles.of(this);
   bool get isRtl => Directionality.of(this) == TextDirection.rtl;
 }

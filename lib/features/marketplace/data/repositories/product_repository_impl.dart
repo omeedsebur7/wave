@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/marketplace/data/models/product_dto.dart';
 import 'package:wave/features/marketplace/domain/entities/product.dart';
 import 'package:wave/features/marketplace/domain/repositories/product_repository.dart';
 
-@LazySingleton(as: ProductRepository)
+
 class ProductRepositoryImpl implements ProductRepository {
   ProductRepositoryImpl(this._db, this._auth);
 
@@ -25,8 +25,7 @@ class ProductRepositoryImpl implements ProductRepository {
     String? category,
   }) async {
     try {
-      var q =
-          _products.where('status', isEqualTo: 'active');
+      var q = _products.where('status', isEqualTo: 'active');
 
       if (category != null) {
         q = q.where('category', isEqualTo: category);
@@ -35,8 +34,7 @@ class ProductRepositoryImpl implements ProductRepository {
       q = switch (sort) {
         ProductSort.newest => q.orderBy('created_at', descending: true),
         ProductSort.priceLowToHigh => q.orderBy('price_minor'),
-        ProductSort.priceHighToLow =>
-          q.orderBy('price_minor', descending: true),
+        ProductSort.priceHighToLow => q.orderBy('price_minor', descending: true),
         ProductSort.topRated => q.orderBy('rating_avg', descending: true),
       };
 
@@ -67,8 +65,6 @@ class ProductRepositoryImpl implements ProductRepository {
         ),
       );
     } catch (_) {
-      // Same reasoning as the Reel feed: a non-Firebase throw here means the
-      // request never reached Firestore.
       return const Err(NetworkFailure());
     }
   }
@@ -85,6 +81,9 @@ class ProductRepositoryImpl implements ProductRepository {
       return Success(ProductDto.fromDoc(doc).toDomain());
     } on FirebaseException catch (e) {
       return Err(ServerFailure(e.message ?? 'Error', code: e.code));
+    } catch (_) {
+      // ڕێگری لە کڕاشکردن ئەگەر داتاکە تێکچووبێت
+      return const Err(NetworkFailure());
     }
   }
 
@@ -94,12 +93,6 @@ class ProductRepositoryImpl implements ProductRepository {
     if (term.isEmpty) return const Success([]);
 
     try {
-      // Firestore has no substring search. This is a prefix range query on a
-      // lowercased title field written at create time: \uf8ff is the highest
-      // code point, so [term, term+\uf8ff] is every string starting with term.
-      //
-      // Real limitation, stated plainly: "shoes" will not find "red shoes".
-      // That's the P2 Algolia case, and it's the honest reason to move.
       final snap = await _products
           .where('status', isEqualTo: 'active')
           .orderBy('title_lower')
@@ -119,6 +112,8 @@ class ProductRepositoryImpl implements ProductRepository {
           reason: FailureReason.searchFailed,
         ),
       );
+    } catch (_) {
+      return const Err(NetworkFailure());
     }
   }
 
@@ -136,6 +131,8 @@ class ProductRepositoryImpl implements ProductRepository {
       );
     } on FirebaseException catch (e) {
       return Err(ServerFailure(e.message ?? 'Error', code: e.code));
+    } catch (_) {
+      return const Err(NetworkFailure());
     }
   }
 
@@ -168,6 +165,8 @@ class ProductRepositoryImpl implements ProductRepository {
       return const Success(null);
     } on FirebaseException catch (e) {
       return Err(ServerFailure(e.message ?? 'Error', code: e.code));
+    } catch (_) {
+      return const Err(NetworkFailure());
     }
   }
 
@@ -184,6 +183,8 @@ class ProductRepositoryImpl implements ProductRepository {
       return Success({for (final d in snap.docs) d.id});
     } on FirebaseException catch (e) {
       return Err(ServerFailure(e.message ?? 'Error', code: e.code));
+    } catch (_) {
+      return const Err(NetworkFailure());
     }
   }
 }

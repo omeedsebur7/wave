@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/error/failure_text.dart';
+import 'package:wave/core/error/failure_to_state.dart'; 
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
 import 'package:wave/core/utils/dates.dart';
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/utils/numbers.dart';
 import 'package:wave/core/widgets/trust_badge.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_sign_in_sheet.dart'; 
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/marketplace/domain/entities/product.dart';
 import 'package:wave/features/marketplace/domain/repositories/product_repository.dart';
 import 'package:wave/features/moderation/domain/entities/report.dart';
@@ -19,12 +22,6 @@ import 'package:wave/features/moderation/presentation/widgets/report_sheet.dart'
 import 'package:wave/features/profile/data/repositories/seller_profile_repository.dart';
 import 'package:wave/features/profile/domain/entities/seller_profile.dart';
 
-/// A seller's public profile.
-///
-/// This screen is the payoff for the whole trust-tier system: it's where a
-/// buyer decides whether to trust a stranger enough to send them money. So the
-/// evidence leads — tier, rating, completed orders, time on the platform — and
-/// the listings follow.
 class SellerProfilePage extends StatefulWidget {
   const SellerProfilePage({required this.sellerId, super.key});
 
@@ -63,20 +60,36 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
     if (!mounted) return;
 
     result.fold(
-      (f) => ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(failureText(context, f)))),
+      (f) {
+        if (isSignInPrompt(f.reason)) {
+          WaveSignInSheet.show(
+            context: context,
+            onSuccess: () => _toggleFollow(profile),
+          );
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(failureText(context, f))));
+      },
       (_) => setState(() => _future = _load()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = context.spacing; // FIXED
+
     return Scaffold(
       body: FutureBuilder<(SellerProfile?, List<Product>)>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()),
+              content: SizedBox.shrink(),
+            );
           }
 
           final profile = snapshot.data?.$1;
@@ -115,13 +128,13 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
               ),
 
               SliverPadding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsDirectional.all(s.x20), // FIXED
                 sliver: SliverList.list(
                   children: [
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 36,
+                          radius: 36, // FIXED
                           backgroundColor: context.waveColors.border,
                           backgroundImage: profile.avatarUrl == null
                               ? null
@@ -132,10 +145,10 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
                                   profile.displayName.isEmpty
                                       ? '?'
                                       : profile.displayName[0].toUpperCase(),
-                                  style: context.texts.headlineMedium,
+                                  style: context.texts.headline, 
                                 ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: s.x16), // FIXED
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,12 +157,12 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
                                 tier: profile.tier,
                                 isKycVerified: profile.kycVerified,
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: s.x8), // FIXED
                               Text(
                                 context.l10n.sellingSince(
                                   _monthYear(context, profile.joinedAt),
                                 ),
-                                style: context.texts.bodySmall,
+                                style: context.texts.caption, 
                               ),
                             ],
                           ),
@@ -158,50 +171,46 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
                     ),
 
                     if (profile.bio != null && profile.bio!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text(profile.bio!, style: context.texts.bodyMedium),
+                      SizedBox(height: s.x16), // FIXED
+                      Text(profile.bio!, style: context.texts.body), 
                     ],
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: s.x20), // FIXED
                     _TrackRecord(profile: profile),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: s.x20), // FIXED
                     Row(
                       children: [
                         Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: () => _toggleFollow(profile),
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                            ),
-                            child: Text(
-                              profile.isFollowedByMe
+                          child: WaveButton( 
+                            variant: WaveButtonVariant.secondary,
+                            expand: true,
+                            label: profile.isFollowedByMe
                                   ? context.l10n.following
                                   : context.l10n.follow,
-                            ),
+                            onPressed: () => _toggleFollow(profile),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: s.x12), // FIXED
                         Expanded(
-                          child: OutlinedButton(
+                          child: WaveButton( 
+                            variant: WaveButtonVariant.tertiary,
+                            expand: true,
+                            label: context.l10n.message,
                             onPressed: () => context.go(Routes.chat),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                            ),
-                            child: Text(context.l10n.message),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 32),
+                    SizedBox(height: s.x32), // FIXED
                     Text(
                       products.isEmpty
                           ? context.l10n.listings
                           : context.l10n.listingsCount(products.length),
-                      style: context.texts.titleMedium,
+                      style: context.texts.title, 
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: s.x12), // FIXED
                   ],
                 ),
               ),
@@ -209,22 +218,23 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
               if (products.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsetsDirectional.symmetric(horizontal: s.x20), // FIXED
                     child: Text(
                       context.l10n.nothingListedRightNow,
-                      style: context.texts.bodySmall,
+                      style: context.texts.caption, 
                     ),
                   ),
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                      s.x20, 0, s.x20, s.x40,), // FIXED
                   sliver: SliverGrid.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 12, // FIXED
+                      mainAxisSpacing: 16, // FIXED
                       childAspectRatio: 0.78,
                     ),
                     itemCount: products.length,
@@ -243,11 +253,6 @@ class _SellerProfilePageState extends State<SellerProfilePage> {
       Dates.monthYear(context, d);
 }
 
-/// The evidence panel.
-///
-/// A new seller gets an honest, non-alarming line rather than a row of zeros.
-/// Three zeros reads as "avoid this person"; "no completed orders yet" reads as
-/// what it is, and lets the buyer make their own call.
 class _TrackRecord extends StatelessWidget {
   const _TrackRecord({required this.profile});
 
@@ -256,24 +261,25 @@ class _TrackRecord extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing; // FIXED
 
     if (!profile.hasTrackRecord) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsetsDirectional.all(s.x16), // FIXED
         decoration: BoxDecoration(
           color: c.info.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+          borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
           border: Border.all(color: c.info.withValues(alpha: 0.3)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.info_outline, size: 18, color: c.info),
-            const SizedBox(width: 10),
+            Icon(Icons.info_outline, size: 18, color: c.info), // FIXED
+            SizedBox(width: s.x12), // FIXED
             Expanded(
               child: Text(
                 context.l10n.noTrackRecordBody,
-                style: context.texts.bodySmall?.copyWith(color: c.info),
+                style: context.texts.caption.copyWith(color: c.info), 
               ),
             ),
           ],
@@ -282,10 +288,10 @@ class _TrackRecord extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsetsDirectional.symmetric(vertical: s.x16), // FIXED
       decoration: BoxDecoration(
         border: Border.all(color: c.border),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       ),
       child: Row(
         children: [
@@ -334,12 +340,12 @@ class _Stat extends StatelessWidget {
         child: ExcludeSemantics(
           child: Column(
             children: [
-              Text(value, style: context.texts.headlineMedium),
-              Text(label, style: context.texts.bodySmall),
+              Text(value, style: context.texts.headline), 
+              Text(label, style: context.texts.caption), 
               if (sublabel.isNotEmpty)
                 Text(
                   sublabel,
-                  style: context.texts.bodySmall?.copyWith(fontSize: 11),
+                  style: context.texts.caption.copyWith(fontSize: 11), // FIXED
                 ),
             ],
           ),
@@ -356,7 +362,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(width: 1, height: 40, color: color);
+      Container(width: 1, height: 40, color: color); // FIXED
 }
 
 class _MiniProductCard extends StatelessWidget {
@@ -367,19 +373,20 @@ class _MiniProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing; // FIXED
 
     return InkWell(
       onTap: () => context.push(
         Routes.productDetailPath(product.id),
         extra: product,
       ),
-      borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+      borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+              borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
               child: CachedNetworkImage(
                 imageUrl: product.primaryImage,
                 width: double.infinity,
@@ -388,16 +395,16 @@ class _MiniProductCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: s.x8), // FIXED
           Text(
             product.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.texts.bodySmall,
+            style: context.texts.caption, 
           ),
           Text(
             context.money(product.priceMinor, product.currency),
-            style: context.texts.labelMedium,
+            style: context.texts.label, 
           ),
         ],
       ),

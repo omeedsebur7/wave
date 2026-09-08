@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/app_router.dart';
+// ئەمە زیاد کرا بۆ گوێگرتن لە نامەکانی سەبەتە (Snackbar)
+import 'package:wave/app/widgets/cart_message_listener.dart';
 import 'package:wave/core/l10n/wave_localizations.dart';
 import 'package:wave/core/services/force_update_service.dart';
 import 'package:wave/core/settings/locale_controller.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/design_system/components/wave_skeleton.dart';
 import 'package:wave/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wave/features/cart/presentation/bloc/cart_bloc.dart';
 import 'package:wave/features/notifications/data/push_handler.dart';
@@ -28,10 +31,16 @@ class _WaveAppState extends State<WaveApp> {
   late final AuthBloc _authBloc = getIt<AuthBloc>()..add(const AuthStarted());
   bool _forceUpdate = false;
   late final AppRouter _appRouter;
+  late final _AuthRefreshNotifier _authRefresh;
 
   @override
   void initState() {
     super.initState();
+
+    // Held in a field so dispose can cancel its stream subscription. It was
+    // constructed inline, which left the subscription alive for the process
+    // lifetime with no way to reach it.
+    _authRefresh = _AuthRefreshNotifier(_authBloc.stream);
 
     _appRouter = AppRouter(
       // Guests count as signed in for routing purposes — they have a session
@@ -43,10 +52,10 @@ class _WaveAppState extends State<WaveApp> {
       hasSeenOnboarding: () => getIt<OnboardingService>().hasSeenOnboarding,
       // Re-evaluates redirects whenever auth changes, so signing in from a
       // deep-linked checkout lands back on checkout rather than the feed.
-      refreshListenable: _AuthRefreshNotifier(_authBloc.stream),
+      refreshListenable: _authRefresh,
     );
 
-    _checkForceUpdate();
+    unawaited(_checkForceUpdate());
 
     // Rehydrated here rather than in the BLoC constructor: it re-reads every
     // product, and doing that during DI would delay the first frame for
@@ -64,6 +73,7 @@ class _WaveAppState extends State<WaveApp> {
   @override
   void dispose() {
     getIt<PushHandler>().dispose();
+    _authRefresh.dispose();
     super.dispose();
   }
 
@@ -96,7 +106,7 @@ class _WaveAppState extends State<WaveApp> {
           return MaterialApp.router(
             // onGenerateTitle rather than `title`, so the OS task-switcher
             // label follows the locale like everything else.
-            onGenerateTitle: (context) => AppL10n.of(context).appName,
+            onGenerateTitle: (context) => AppLocalizations.of(context).appName,
             debugShowCheckedModeBanner: false,
             routerConfig: _appRouter.router,
             theme: AppTheme.light(locale),
@@ -126,7 +136,15 @@ class _WaveAppState extends State<WaveApp> {
               );
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(textScaler: scale),
-                child: child!,
+                // گوێگرەکە لێرەدا زیاد کرا
+                child: CartMessageListener(
+                  // One shimmer clock for the whole app. Mounted here rather
+                  // than above MaterialApp because it reads Theme (for
+                  // motion.shimmerLoop) and MediaQuery (for disableAnimations),
+                  // neither of which exists above the app. Without it every
+                  // skeleton renders as a static grey block.
+                  child: WaveShimmerScope(child: child!),
+                ),
               );
             },
           );
@@ -153,7 +171,7 @@ class _AuthRefreshNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    unawaited(_subscription.cancel());
     super.dispose();
   }
 }

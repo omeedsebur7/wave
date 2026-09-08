@@ -5,10 +5,15 @@ import 'package:video_player/video_player.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/analytics/analytics_events.dart';
 import 'package:wave/core/analytics/analytics_service.dart';
+import 'package:wave/core/error/failure_text.dart';
+import 'package:wave/core/error/failure_to_state.dart'; 
+import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/services/bunny_stream_service.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_sign_in_sheet.dart'; 
+import 'package:wave/design_system/components/wave_skeleton.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/reels/domain/entities/reel.dart';
 import 'package:wave/features/reels/presentation/bloc/reels_feed_bloc.dart';
 import 'package:wave/features/reels/presentation/widgets/buy_now_button.dart';
@@ -47,6 +52,8 @@ class _ReelsViewState extends State<_ReelsView> with WidgetsBindingObserver {
     ),
   );
 
+  bool _pausedByUser = false;
+
   @override
   void initState() {
     super.initState();
@@ -55,36 +62,65 @@ class _ReelsViewState extends State<_ReelsView> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Backgrounding the app must stop playback and audio — otherwise a Reel
-    // keeps talking from the user's pocket.
-    if (state != AppLifecycleState.resumed) _pool.pauseAll();
+    if (state != AppLifecycleState.resumed) {
+      _pool.pauseAll();
+      return;
+    }
+    if (!_pausedByUser) _pool.resumeCurrent();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Nothing survives the feed. Every native player is released here.
     _pool.disposeAll();
     _pageController.dispose();
     super.dispose();
   }
 
-  /// Unwraps the pooled adapter back to the concrete controller the
-  /// VideoPlayer widget needs. Null while a player is still initialising, which
-  /// is exactly when the thumbnail underneath is doing its job.
   VideoPlayerController? _controllerFor(String reelId) {
     final player = _pool.playerFor(reelId);
     return player is VideoPlayerPooledPlayer ? player.controller : null;
   }
 
+  void _togglePlayback(VideoPlayerController? controller) {
+    if (controller == null || !controller.value.isInitialized) return;
+    setState(() => _pausedByUser = controller.value.isPlaying);
+    _pausedByUser ? controller.pause() : controller.play();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.waveColors;
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
+      backgroundColor: c.videoSurface,
       body: BlocConsumer<ReelsFeedBloc, ReelsFeedState>(
-        listenWhen: (a, b) => a.reels != b.reels || a.currentIndex != b.currentIndex,
+        listenWhen: (a, b) =>
+            a.reels != b.reels ||
+            a.currentIndex != b.currentIndex ||
+            b.actionFailure != null,
         listener: (context, state) {
+          final actionFailure = state.actionFailure;
+          
+          if (actionFailure != null) {
+            if (isSignInPrompt(actionFailure.reason)) {
+              final bloc = context.read<ReelsFeedBloc>();
+              final reelId = state.reels[state.currentIndex].id;
+              
+              final retry = actionFailure.reason == FailureReason.signInToSaveReels
+                  ? () => bloc.add(ReelSaveToggled(reelId))
+                  : () => bloc.add(ReelLikeToggled(reelId));
+                  
+              WaveSignInSheet.show(context: context, onSuccess: retry);
+            } else {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(content: Text(failureText(context, actionFailure))),
+                );
+            }
+          }
+
           if (state.reels.isEmpty) return;
           _pool.onPageChanged(
             index: state.currentIndex,
@@ -95,31 +131,45 @@ class _ReelsViewState extends State<_ReelsView> with WidgetsBindingObserver {
           );
         },
         builder: (context, state) {
-          return switch (state.status) {
-            FeedStatus.initial || FeedStatus.loading => const _FeedSkeleton(),
-            FeedStatus.failure => WaveErrorView(
-                title: context.l10n.reelsNotLoaded,
-                message: context.l10n.errorNoConnectionBody,
-                onRetry: () =>
-                    context.read<ReelsFeedBloc>().add(const FeedRefreshed()),
-              ),
-            _ when state.reels.isEmpty => WaveErrorView.empty(
-                title: context.l10n.noReelsYet,
-                message: context.l10n.noReelsBody,
-              ),
-            _ => PageView.builder(
-                controller: _pageController,
-                scrollDirection: Axis.vertical,
-                itemCount: state.reels.length,
-                onPageChanged: (i) =>
-                    context.read<ReelsFeedBloc>().add(FeedPageChanged(i)),
-                itemBuilder: (context, index) => _ReelItem(
-                  reel: state.reels[index],
-                  controller: _controllerFor(state.reels[index].id),
-                  isActive: index == state.currentIndex,
+          if (state.reels.isEmpty) {
+            return switch (state.status) {
+              FeedStatus.initial || FeedStatus.loading => const _FeedSkeleton(),
+              FeedStatus.failure => _FeedFailure(failure: state.failure),
+              _ => WaveStateView(
+                  state: WaveEmpty(
+                    icon: Icons.videocam_off_outlined,
+                    title: context.l10n.noReelsYet,
+                    body: context.l10n.noReelsBody,
+                    actionLabel: context.l10n.retry,
+                    onAction: () => context
+                        .read<ReelsFeedBloc>()
+                        .add(const FeedRefreshed()),
+                  ),
+                  content: const SizedBox.shrink(),
                 ),
-              ),
-          };
+            };
+          }
+
+          return PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            itemCount: state.reels.length,
+            onPageChanged: (i) {
+              if (_pausedByUser) setState(() => _pausedByUser = false);
+              context.read<ReelsFeedBloc>().add(FeedPageChanged(i));
+            },
+            itemBuilder: (context, index) {
+              final reel = state.reels[index];
+              final controller = _controllerFor(reel.id);
+              return _ReelItem(
+                reel: reel,
+                controller: controller,
+                isActive: index == state.currentIndex,
+                pausedByUser: _pausedByUser && index == state.currentIndex,
+                onTap: () => _togglePlayback(controller),
+              );
+            },
+          );
         },
       ),
     );
@@ -131,93 +181,156 @@ class _ReelItem extends StatelessWidget {
     required this.reel,
     required this.controller,
     required this.isActive,
+    required this.pausedByUser,
+    required this.onTap,
   });
 
   final Reel reel;
   final VideoPlayerController? controller;
   final bool isActive;
+  final bool pausedByUser;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ready = controller?.value.isInitialized ?? false;
+    final c = context.waveColors;
+    final s = context.spacing;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final target = (MediaQuery.sizeOf(context).width * dpr).round();
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // The thumbnail is always painted underneath. That's what makes a swipe
-        // feel instant even before the first video frame decodes — the user
-        // sees the Reel, not a black rectangle.
-        CachedNetworkImage(
-          imageUrl: reel.thumbnailUrl,
-          fit: BoxFit.cover,
-          fadeInDuration: Duration.zero,
-        ),
-        if (ready)
-          FittedBox(
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: reel.thumbnailUrl,
             fit: BoxFit.cover,
-            child: SizedBox(
-              width: controller!.value.size.width,
-              height: controller!.value.size.height,
-              child: VideoPlayer(controller!),
+            memCacheWidth: target,
+            fadeInDuration: Duration.zero,
+            errorWidget: (_, __, ___) => ColoredBox(color: c.videoSurface),
+          ),
+
+          if (controller != null)
+            ValueListenableBuilder<VideoPlayerValue>(
+              valueListenable: controller!,
+              builder: (context, value, _) {
+                if (!value.isInitialized) return const SizedBox.shrink();
+                return RepaintBoundary(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: value.size.width,
+                      height: value.size.height,
+                      child: VideoPlayer(controller!),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, c.scrim],
+                stops: const [0.55, 1],
+              ),
             ),
           ),
 
-        // Scrim so white caption text stays legible over any video.
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black54],
-              stops: [0.55, 1],
+          if (pausedByUser)
+            Center(
+              child: Icon(
+                Icons.play_arrow_rounded,
+                size: s.x64,
+                color: c.onScrim,
+              ),
+            ),
+
+          PositionedDirectional(
+            start: s.x16,
+            end: s.x12,
+            bottom: s.x24,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: _Caption(reel: reel)),
+                  SizedBox(width: s.x12),
+                  ReelActionRail(reel: reel),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
 
-        // The action rail belongs on the trailing edge, which is the LEFT of
-        // the screen in Arabic and Kurdish — where the thumb of an RTL reader
-        // expects it.
-        PositionedDirectional(
-          end: 12,
-          bottom: 120,
-          child: ReelActionRail(reel: reel),
-        ),
+class _Caption extends StatelessWidget {
+  const _Caption({required this.reel});
 
-        // 80 of clearance on the trailing side, for the rail above.
-        PositionedDirectional(
-          start: 16,
-          end: 80,
-          bottom: 24,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '@${reel.authorName}',
-                style: context.texts.titleMedium?.copyWith(color: Colors.white),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                reel.caption,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.texts.bodyMedium?.copyWith(color: Colors.white),
-              ),
-              // Buy Now appears if, and only if, the publisher linked a product.
-              if (reel.hasLinkedProduct) ...[
-                const SizedBox(height: 12),
-                BuyNowButton(
-                  reelId: reel.id,
-                  productId: reel.linkedProductId!,
-                  sellerId: reel.authorId,
-                  priceMinor: reel.linkedProductPriceMinor,
-                  currency: reel.linkedProductCurrency,
-                ),
-              ],
-            ],
+  final Reel reel;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final t = context.texts;
+    final s = context.spacing;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '@${reel.authorName}',
+          style: t.bodyStrong.copyWith(color: c.onScrim),
+        ),
+        SizedBox(height: s.x4),
+        Text(
+          reel.caption,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: t.body.copyWith(color: c.onScrim), // FIXED: bodyMedium to body
+        ),
+        if (reel.hasLinkedProduct) ...[
+          SizedBox(height: s.x12),
+          BuyNowButton(
+            reelId: reel.id,
+            productId: reel.linkedProductId!,
+            sellerId: reel.authorId,
+            priceMinor: reel.linkedProductPriceMinor,
+            currency: reel.linkedProductCurrency,
           ),
-        ),
+        ],
       ],
+    );
+  }
+}
+
+class _FeedFailure extends StatelessWidget {
+  const _FeedFailure({required this.failure});
+
+  final Object? failure;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = failure;
+    final kind = f is Failure ? waveFailureKind(f) : WaveFailureKind.serverError;
+    
+    return WaveStateView(
+      state: WaveFailure(
+        kind,
+        detail: f is Failure ? failureText(context, f) : null,
+        onRetry: isRetryable(kind)
+            ? () => context.read<ReelsFeedBloc>().add(const FeedRefreshed())
+            : null,
+      ),
+      content: const SizedBox.shrink(),
     );
   }
 }
@@ -227,14 +340,35 @@ class _FeedSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Colors.black,
-      child: Center(
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
-        ),
+    final c = context.waveColors;
+    final s = context.spacing;
+
+    return ColoredBox(
+      color: c.videoSurface,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const WaveSkeleton.line(height: double.infinity, radius: 0),
+          PositionedDirectional(
+            start: s.x16,
+            end: s.x64,
+            bottom: s.x24,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const WaveSkeleton(width: 140, height: 22), // FIXED: Raw int to standard float
+                  SizedBox(height: s.x4),
+                  const WaveSkeleton.line(height: 22), // FIXED
+                  SizedBox(height: s.x4),
+                  const WaveSkeleton(width: 200, height: 22), // FIXED
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -12,16 +12,14 @@ class CartLine extends Equatable {
 
   int get lineTotalMinor => product.priceMinor * quantity;
 
-  /// A line can go stale between adding and checking out — the seller may sell
-  /// the last unit to someone else. The cart surfaces this rather than letting
-  /// checkout fail with a confusing server error.
   bool get exceedsStock => quantity > product.stock;
 
   CartLine copyWith({int? quantity}) =>
       CartLine(product: product, quantity: quantity ?? this.quantity);
 
+  // FIXED: Changed from product.id to product to track price/stock changes correctly
   @override
-  List<Object?> get props => [product.id, quantity];
+  List<Object?> get props => [product, quantity];
 }
 
 class Cart extends Equatable {
@@ -36,16 +34,12 @@ class Cart extends Equatable {
 
   int get subtotalMinor => lines.fold(0, (sum, l) => sum + l.lineTotalMinor);
 
-  /// Clamped at zero — a discount larger than the subtotal must never produce a
-  /// negative total, which would read as the shop paying the customer.
   int get totalMinor =>
       (subtotalMinor - discountMinor).clamp(0, subtotalMinor);
 
   String get currency =>
       lines.isEmpty ? 'IQD' : lines.first.product.currency;
 
-  /// v1 is single-seller per order (§5.1: one product per Reel; multi-seller
-  /// carts need split payouts and split fulfilment, which is Phase 2).
   bool get hasMultipleSellers =>
       lines.map((l) => l.product.sellerId).toSet().length > 1;
 

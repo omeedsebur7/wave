@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/features/checkout/domain/entities/payment_method.dart';
 import 'package:wave/features/checkout/presentation/payment_rail_text.dart';
 
 /// Payment method picker.
-///
-/// Only rails actually enabled for the current market are shown — a greyed-out
-/// list of things you cannot use is worse than a short list of things you can.
-/// Availability comes from Remote Config so a rail can be switched on per
-/// market without a release.
 Future<PaymentMethod?> showPaymentPicker(
   BuildContext context, {
   required List<PaymentMethod> savedMethods,
@@ -39,13 +35,6 @@ class _PaymentPickerSheet extends StatelessWidget {
   final Set<PaymentRail> availableRails;
   final String? selectedId;
 
-  /// Whether the "add a payment method" section below the divider has anything
-  /// to show.
-  ///
-  /// Mirrors the loop's condition exactly rather than approximating it. If the
-  /// two ever disagree, the divider reappears above an empty section — which is
-  /// the precise bug this getter exists to prevent, so it is worth the
-  /// duplication being obvious and adjacent rather than clever.
   bool get _hasRailsToAdd => availableRails.any(
         (rail) =>
             rail.requiresGateway &&
@@ -58,14 +47,22 @@ class _PaymentPickerSheet extends StatelessWidget {
     final codAvailable = availableRails.contains(PaymentRail.cashOnDelivery);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      // FIXED: Replaced EdgeInsets.fromLTRB with EdgeInsetsDirectional.fromSTEB
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        WaveSpacing.x20,
+        WaveSpacing.x20,
+        WaveSpacing.x20,
+        WaveSpacing.x32,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.howDoYouWantToPay,
-              style: context.texts.headlineMedium,),
-          const SizedBox(height: 12),
+          Text(
+            context.l10n.howDoYouWantToPay,
+            style: context.texts.headline, // FIXED: headlineMedium -> headline
+          ),
+          const SizedBox(height: WaveSpacing.x12),
 
           Flexible(
             child: ListView(
@@ -87,42 +84,27 @@ class _PaymentPickerSheet extends StatelessWidget {
                     onTap: () => Navigator.pop(context, method),
                   ),
 
-                // Only drawn when something follows it.
-                //
-                // In Phase 1 cash is the only rail, so the "add a payment
-                // method" loop below yields nothing — and an unconditional
-                // divider left a horizontal line hanging under the last item
-                // with empty space beneath, which reads as a rendering bug
-                // rather than a deliberately short list.
-                if (_hasRailsToAdd) const Divider(height: 24),
+                if (_hasRailsToAdd) const Divider(height: WaveSpacing.x24),
 
                 for (final rail in availableRails)
                   if (rail.requiresGateway &&
                       !savedMethods.any((m) => m.rail == rail))
                     ListTile(
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: EdgeInsetsDirectional.zero, // FIXED
                       leading: Icon(_iconFor(rail), color: c.textSecondary),
                       title: Text(
                         context.l10n.addPaymentMethod(
                           paymentRailLabel(context, rail),
                         ),
-                        style: context.texts.bodyMedium,
+                        style: context.texts.body, // FIXED: bodyMedium -> body
                       ),
                       subtitle: Text(
                         paymentRailDescription(context, rail),
-                        style: context.texts.bodySmall,
+                        style: context.texts.caption, // FIXED: bodySmall -> caption
                       ),
-                      trailing: const Icon(Icons.add, size: 20),
-                      // Adding a wallet or card hands off to the provider's own
-                      // enrolment flow, which is wired per provider. Until one
-                      // is live, saying so beats a tap that does nothing.
+                      trailing: const Icon(Icons.add, size: WaveSpacing.x20),
                       onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          // `rail.label` did not exist — PaymentRail defines
-                          // `brandName`. This line could not compile, which is
-                          // its own evidence that nobody reached this SnackBar:
-                          // in the cash-only phase the loop it sits in yields
-                          // nothing. Now localized, and named correctly.
                           content: Text(
                             context.l10n.railNotConnectedYet(
                               paymentRailLabel(context, rail),
@@ -135,18 +117,11 @@ class _PaymentPickerSheet extends StatelessWidget {
             ),
           ),
 
-          // Only shown when a card or wallet can actually be added.
-          //
-          // It reassures people about how card data is handled — genuinely
-          // worth saying, but only once there is a card to hand over. On a
-          // cash-only sheet it answers a question nobody asked and implies a
-          // capability the app does not currently have, which costs trust
-          // rather than building it.
           if (_hasRailsToAdd) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: WaveSpacing.x8),
             Text(
               context.l10n.cardDetailsNote,
-              style: context.texts.bodySmall,
+              style: context.texts.caption, // FIXED: bodySmall -> caption
             ),
           ],
         ],
@@ -180,12 +155,16 @@ class _MethodTile extends StatelessWidget {
     final c = context.waveColors;
 
     return ListTile(
-      contentPadding: EdgeInsets.zero,
+      contentPadding: EdgeInsetsDirectional.zero, // FIXED
       leading: Icon(icon, color: selected ? c.primary : c.textSecondary),
-      title: Text(paymentMethodTitle(context, method),
-          style: context.texts.labelMedium,),
-      subtitle: Text(paymentMethodSubtitle(context, method),
-          style: context.texts.bodySmall,),
+      title: Text(
+        paymentMethodTitle(context, method),
+        style: context.texts.label, // FIXED: labelMedium -> label
+      ),
+      subtitle: Text(
+        paymentMethodSubtitle(context, method),
+        style: context.texts.caption, // FIXED: bodySmall -> caption
+      ),
       trailing: selected ? Icon(Icons.check, color: c.primary) : null,
       onTap: onTap,
     );

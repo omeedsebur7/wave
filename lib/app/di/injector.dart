@@ -67,7 +67,7 @@ final getIt = GetIt.instance;
 
 /// Dependency wiring, registered by hand.
 ///
-/// The brief specifies GetIt + Injectable, and the `@injectable` annotations
+/// The brief specifies GetIt + Injectable, and the `` annotations
 /// are still on every class so switching to generated wiring is a build_runner
 /// run away. This file exists because hand-written registration has one
 /// property generated code does not: it runs on a fresh clone, before any

@@ -1,115 +1,85 @@
 import 'package:flutter/material.dart';
 
-/// Glassmorphism / 3D surface tokens from §3.4.
-///
-/// The glow is deliberately rationed — FABs, the active product card, and the
-/// 3D viewer only. Applied to every card it stops being a signature and
-/// becomes noise.
-@immutable
+abstract final class _RadiiRaw {
+  static const double xs = 6;
+  static const double sm = 10;
+  static const double md = 14;
+  static const double xl = 28;
+  static const double full = 999;
+}
+
 class WaveSurfaces extends ThemeExtension<WaveSurfaces> {
   const WaveSurfaces({
-    required this.blurSigma,
-    required this.blurSigmaLowEnd,
-    required this.glassFill,
-    required this.glassBorder,
-    required this.glowColor,
-    required this.isDark,
+    required this.radiusChip,
+    required this.radiusButton,
+    required this.radiusCard,
+    required this.radiusSheet,
+    required this.radiusFull,
   });
 
-  factory WaveSurfaces.light(Color glow) => WaveSurfaces(
-        blurSigma: 20,
-        blurSigmaLowEnd: 12,
-        glassFill: Colors.white.withValues(alpha: 0.10), // 8–12%
-        glassBorder: Colors.white.withValues(alpha: 0.19), // 18–20%
-        glowColor: glow,
-        isDark: false,
+  factory WaveSurfaces.standard() => const WaveSurfaces(
+        radiusChip: _RadiiRaw.xs,
+        radiusButton: _RadiiRaw.sm,
+        radiusCard: _RadiiRaw.md,
+        radiusSheet: _RadiiRaw.xl,
+        radiusFull: _RadiiRaw.full,
       );
+  
+  final double radiusChip;
+  final double radiusButton;
+  final double radiusCard;
+  final double radiusSheet;
+  final double radiusFull;
 
-  factory WaveSurfaces.dark(Color glow) => WaveSurfaces(
-        blurSigma: 20,
-        blurSigmaLowEnd: 12,
-        glassFill: Colors.white.withValues(alpha: 0.05), // 4–6%
-        glassBorder: Colors.white.withValues(alpha: 0.19),
-        glowColor: glow,
-        isDark: true,
-      );
-
-  final double blurSigma;
-  final double blurSigmaLowEnd;
-  final Color glassFill;
-  final Color glassBorder;
-  final Color glowColor;
-  final bool isDark;
-
-  // Corner radius scale: chips / cards / sheets.
-  static const radiusChip = 12.0;
-  static const radiusCard = 16.0;
-  static const radiusSheet = 24.0;
-
-  /// Elevation tier 1 — resting. Cards at rest in a grid.
-  List<BoxShadow> get resting => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
-
-  /// Elevation tier 2 — raised. Selected cards, sheets, dialogs.
-  List<BoxShadow> get raised => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
-        ),
-      ];
-
-  /// Elevation tier 3 — floating. FAB, active product card, 3D viewer.
-  /// This is the only tier that carries the accent glow.
-  List<BoxShadow> get floating => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.55 : 0.12),
-          blurRadius: 24,
-          offset: const Offset(0, 10),
-        ),
-        BoxShadow(
-          color: glowColor.withValues(alpha: 0.30), // 25–35%
-          blurRadius: 32, // 24–40px
-          spreadRadius: -4,
-        ),
-      ];
+  // --- LEGACY BRIDGE ---
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  List<BoxShadow> get resting => const [BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 2))];
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  List<BoxShadow> get raised => const [BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 4))];
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  List<BoxShadow> get floating => const [BoxShadow(color: Color(0x33000000), blurRadius: 16, offset: Offset(0, 8))];
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  int get blurSigma => 12;
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  int get blurSigmaLowEnd => 6;
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  Color get glassFill => const Color(0x33FFFFFF);
+  
+  @Deprecated('Legacy bridge. Removed when P16 completes.')
+  Color get glassBorder => const Color(0x33FFFFFF);
+  
+  // ignore: prefer_constructors_over_static_methods
+  static WaveSurfaces of(BuildContext context) {
+    final ext = Theme.of(context).extension<WaveSurfaces>();
+    assert(ext != null, 'WaveSurfaces missing.');
+    return ext ?? WaveSurfaces.standard();
+  }
 
   @override
   WaveSurfaces copyWith({
-    double? blurSigma,
-    double? blurSigmaLowEnd,
-    Color? glassFill,
-    Color? glassBorder,
-    Color? glowColor,
-    bool? isDark,
+    double? radiusChip,
+    double? radiusButton,
+    double? radiusCard,
+    double? radiusSheet,
+    double? radiusFull,
   }) {
     return WaveSurfaces(
-      blurSigma: blurSigma ?? this.blurSigma,
-      blurSigmaLowEnd: blurSigmaLowEnd ?? this.blurSigmaLowEnd,
-      glassFill: glassFill ?? this.glassFill,
-      glassBorder: glassBorder ?? this.glassBorder,
-      glowColor: glowColor ?? this.glowColor,
-      isDark: isDark ?? this.isDark,
+      radiusChip: radiusChip ?? this.radiusChip,
+      radiusButton: radiusButton ?? this.radiusButton,
+      radiusCard: radiusCard ?? this.radiusCard,
+      radiusSheet: radiusSheet ?? this.radiusSheet,
+      radiusFull: radiusFull ?? this.radiusFull,
     );
   }
 
   @override
-  WaveSurfaces lerp(ThemeExtension<WaveSurfaces>? other, double t) {
-    if (other is! WaveSurfaces) return this;
-    return WaveSurfaces(
-      blurSigma: lerpDouble(blurSigma, other.blurSigma, t),
-      blurSigmaLowEnd: lerpDouble(blurSigmaLowEnd, other.blurSigmaLowEnd, t),
-      glassFill: Color.lerp(glassFill, other.glassFill, t)!,
-      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
-      glowColor: Color.lerp(glowColor, other.glowColor, t)!,
-      isDark: t < 0.5 ? isDark : other.isDark,
-    );
+  WaveSurfaces lerp(covariant WaveSurfaces? other, double t) {
+    if (other == null) return this;
+    return t < 0.5 ? this : other;
   }
-
-  static double lerpDouble(double a, double b, double t) => a + (b - a) * t;
 }

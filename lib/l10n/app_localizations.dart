@@ -46,7 +46,7 @@ abstract final class WaveLocalizations {
   static const List<LocalizationsDelegate<dynamic>> delegates = [
     // Without this first entry the ARB files are dead weight and every screen
     // renders whatever was hardcoded into it.
-    AppL10n.delegate,
+    AppLocalizations.delegate,
 
     _CkbMaterialLocalizationsDelegate(),
     _CkbWidgetsLocalizationsDelegate(),

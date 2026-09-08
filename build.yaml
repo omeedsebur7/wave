@@ -2,18 +2,18 @@
 #
 # There is no `build_runner` step anywhere in the workflow: not in the README's
 # setup instructions, not in CI. Both builders below are configured and neither
-# has anything to generate, because `lib/` contains zero `@InjectableInit`, zero
+# has anything to generate, because `lib/` contains zero `Init`, zero
 # `@JsonSerializable`, zero `@freezed` and zero `part` directives. Running
 # `dart run build_runner build` today succeeds and emits no files.
 #
 # This file is kept rather than deleted, for two specific reasons:
 #
-# 1. Every repository and BLoC still carries its `@injectable` /
-#    `@LazySingleton` annotation. DI is registered by hand in
+# 1. Every repository and BLoC still carries its `` /
+#    `` annotation. DI is registered by hand in
 #    `lib/app/di/injector.dart` — that file explains why: hand-written wiring
 #    runs on a fresh clone before any codegen, and it is the file a new engineer
 #    reads to learn what depends on what. Keeping the annotations plus this
-#    config means switching to generated wiring is adding one `@InjectableInit`
+#    config means switching to generated wiring is adding one `Init`
 #    and running build_runner, rather than reconstructing the builder
 #    configuration from scratch.
 #

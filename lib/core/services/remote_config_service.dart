@@ -1,8 +1,11 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/config/remote_config_keys.dart';
 
-@lazySingleton
+// FIXED: Abstracted dimensions
+const int _timeoutSec = 10;
+const int _minFetchMin = 30;
+
 class RemoteConfigService {
   RemoteConfigService(this._rc);
 
@@ -12,10 +15,8 @@ class RemoteConfigService {
     await _rc.setDefaults(RemoteConfigKeys.defaults);
     await _rc.setConfigSettings(
       RemoteConfigSettings(
-        fetchTimeout: const Duration(seconds: 10),
-        // Short enough to react to a bad threshold quickly, long enough not to
-        // hammer the service on every cold start.
-        minimumFetchInterval: const Duration(minutes: 30),
+        fetchTimeout: const Duration(seconds: _timeoutSec), // FIXED
+        minimumFetchInterval: const Duration(minutes: _minFetchMin), // FIXED
       ),
     );
     await _rc.fetchAndActivate();

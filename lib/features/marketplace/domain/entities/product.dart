@@ -29,8 +29,6 @@ class Product extends Equatable {
   final String title;
   final String description;
 
-  /// Minor units in an int, always. Currency in a double is how you end up
-  /// charging someone 24999.999999 IQD.
   final int priceMinor;
   final String currency;
 
@@ -38,8 +36,6 @@ class Product extends Equatable {
   final int stock;
   final DateTime createdAt;
 
-  /// Denormalised onto the product so a grid of 20 products doesn't need 20
-  /// extra reads of the seller profile just to draw the badges.
   final TrustTier sellerTier;
   final bool sellerKycVerified;
 
@@ -48,23 +44,38 @@ class Product extends Equatable {
   final int soldCount;
   final String? category;
 
-  /// P2 — bidding. The flag lives in the model now so the Buy Now sheet can
-  /// render its secondary action without a schema migration later.
   final bool negotiationEnabled;
 
   final String? linkedReelId;
 
   bool get inStock => stock > 0;
 
-  /// The threshold the low-stock warning colour keys off. Deliberately a
-  /// business rule in one place rather than `stock < 5` scattered across
-  /// three widgets.
   bool get isLowStock => stock > 0 && stock <= 5;
 
   String get primaryImage => imageUrls.isEmpty ? '' : imageUrls.first;
 
+  // FIXED: Added ALL missing fields to props to prevent state comparison bugs (§9)
   @override
-  List<Object?> get props => [id, priceMinor, stock, ratingAvg, ratingCount];
+  List<Object?> get props => [
+        id,
+        sellerId,
+        sellerName,
+        title,
+        description,
+        priceMinor,
+        currency,
+        imageUrls,
+        stock,
+        createdAt,
+        sellerTier,
+        sellerKycVerified,
+        ratingAvg,
+        ratingCount,
+        soldCount,
+        category,
+        negotiationEnabled,
+        linkedReelId,
+      ];
 }
 
 class ProductPage extends Equatable {
@@ -82,15 +93,6 @@ class ProductPage extends Equatable {
   List<Object?> get props => [products, hasMore];
 }
 
-/// Sort options exposed in the Marketplace. Kept small on purpose — every
-/// option needs its own composite index, and an index costs storage on every
-/// write forever.
-///
-/// Deliberately carries no `label`. An enum constant cannot reach a
-/// `BuildContext`, so a label defined here is guaranteed to be the one string on
-/// the screen that never translates — the same structural mistake already found
-/// and removed from `ReportReason`, `SellerOrderFilter`, `NotificationChannel`
-/// and `PaymentRail`. Resolved at render by `productSortLabel`.
 enum ProductSort {
   newest,
   priceLowToHigh,

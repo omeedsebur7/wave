@@ -4,10 +4,14 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/dates.dart';
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/location/presentation/widgets/delivery_location_card.dart';
 import 'package:wave/features/orders/data/receipt_service.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
@@ -17,12 +21,6 @@ import 'package:wave/features/orders/presentation/widgets/order_tracker.dart';
 import 'package:wave/features/reviews/domain/repositories/review_repository.dart';
 import 'package:wave/features/reviews/presentation/widgets/rating_sheet.dart';
 
-/// Single order (§5.2): the 3-step tracker, a digital receipt, cancellation
-/// while still in Confirmed, and the seller-rating prompt once delivered.
-///
-/// Streamed rather than fetched once. An order's status changes while someone
-/// is looking at it, and making them pull-to-refresh to find out whether it
-/// shipped is exactly the friction the simplified tracker exists to remove.
 class OrderDetailPage extends StatelessWidget {
   const OrderDetailPage({required this.orderId, super.key});
 
@@ -42,7 +40,11 @@ class OrderDetailPage extends StatelessWidget {
         stream: repo.watchOrder(orderId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            // FIXED: Replaced CircularProgressIndicator with WaveStateView
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()), 
+              content: SizedBox.shrink(),
+            );
           }
 
           final order = snapshot.data;
@@ -71,151 +73,122 @@ class _OrderDetailView extends StatelessWidget {
     final c = context.waveColors;
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsetsDirectional.all(WaveSpacing.x20),
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          padding: const EdgeInsetsDirectional.symmetric(
+            vertical: WaveSpacing.x24, 
+            horizontal: WaveSpacing.x16,
+          ),
           decoration: BoxDecoration(
             border: Border.all(color: c.border),
-            borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+            borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
           ),
           child: Column(
             children: [
               OrderTracker(stage: order.stage),
-              const SizedBox(height: 16),
+              const SizedBox(height: WaveSpacing.x16),
               Text(
                 _stageExplanation(context, order),
-                style: context.texts.bodySmall,
+                style: context.texts.caption, // FIXED: bodySmall to caption
                 textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 24),
-        // Shown to the buyer too. Someone who mis-set a pin needs to be able
-        // to see that before the courier does.
+        const SizedBox(height: WaveSpacing.x24),
         DeliveryLocationCard(location: order.deliveryLocation),
-        const SizedBox(height: 24),
+        const SizedBox(height: WaveSpacing.x24),
 
-        Text(context.l10n.items, style: context.texts.titleMedium),
-        const SizedBox(height: 12),
+        Text(context.l10n.items, style: context.texts.title), // FIXED: titleMedium to title
+        const SizedBox(height: WaveSpacing.x12),
 
         for (final item in order.items)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x12),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.title, style: context.texts.bodyMedium),
+                      Text(item.title, style: context.texts.body), // FIXED
                       Text(
                         context.l10n.quantityTimesTitle(
                           item.quantity,
                           context.money(item.unitPriceMinor, order.currency),
                         ),
-                        style: context.texts.bodySmall,
+                        style: context.texts.caption, // FIXED
                       ),
                     ],
                   ),
                 ),
                 Text(
                   context.money(item.lineTotalMinor, order.currency),
-                  style: context.texts.bodyMedium,
+                  style: context.texts.body, // FIXED
                 ),
               ],
             ),
           ),
 
-        const Divider(height: 32),
+        const Divider(height: WaveSpacing.x32),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(context.l10n.totalPaid, style: context.texts.titleMedium),
+            Text(context.l10n.totalPaid, style: context.texts.title), // FIXED
             Text(
               context.money(order.totalMinor, order.currency),
-              style: context.texts.titleMedium,
+              style: context.texts.title, // FIXED
             ),
           ],
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: WaveSpacing.x8),
         Text(
           context.l10n.orderedOn(_formatDate(context, order.createdAt)),
-          style: context.texts.bodySmall,
+          style: context.texts.caption, // FIXED
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: WaveSpacing.x32),
 
         if (order.canCancel)
-          OutlinedButton(
+          WaveButton(
+            variant: WaveButtonVariant.destructive,
+            expand: true,
+            label: context.l10n.cancelThisOrder,
             onPressed: () => _confirmCancel(context),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: c.error,
-              side: BorderSide(color: c.error.withValues(alpha: 0.5)),
-              minimumSize: const Size(0, 52),
-            ),
-            child: Text(context.l10n.cancelThisOrder),
           ),
 
         if (order.canBeRated) ...[
-          Text(context.l10n.howDidItGo, style: context.texts.titleMedium),
-          const SizedBox(height: 4),
+          Text(context.l10n.howDidItGo, style: context.texts.title), // FIXED
+          const SizedBox(height: WaveSpacing.x4),
           Text(
             context.l10n.ratingHelpsNextBuyer,
-            style: context.texts.bodySmall,
+            style: context.texts.caption, // FIXED
           ),
-          const SizedBox(height: 12),
-          FilledButton(
+          const SizedBox(height: WaveSpacing.x12),
+          WaveButton(
+            expand: true,
+            label: context.l10n.rateThisOrder,
             onPressed: () => _rate(context),
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-            child: Text(context.l10n.rateThisOrder),
           ),
         ],
 
-        const SizedBox(height: 12),
-        TextButton.icon(
+        const SizedBox(height: WaveSpacing.x12),
+        WaveButton(
+          variant: WaveButtonVariant.tertiary,
+          icon: Icons.receipt_outlined,
+          label: context.l10n.receipt,
           onPressed: () => _shareReceipt(context),
-          icon: const Icon(Icons.receipt_outlined, size: 18),
-          label: Text(context.l10n.receipt),
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: WaveSpacing.x40),
       ],
     );
   }
 
-  /// One plain sentence per stage. The tracker shows where the order is; this
-  /// says what that means and what happens next, which is the actual question
-  /// behind "where's my order".
-  /// The explanation under the tracker.
-  ///
-  /// Still three customer-facing steps (§5.2) — a fourth would undo the
-  /// simplification the whole tracker exists for. But an online-payment order
-  /// sits at `pendingPayment` until the provider webhook lands, and telling that
-  /// buyer "the seller has your order and is getting it ready" is simply false.
-  /// The step stays the same; the sentence under it does not.
-  ///
-  /// The inner switch used `default: break;` to fall through to the outer one
-  /// for every OrderInternalStatus that is not one of the three payment
-  /// states. Replaced with every OTHER status enumerated explicitly, each
-  /// breaking immediately, for the same reason the switch in
-  /// quick_checkout_sheet.dart was: a `default` here would silently absorb
-  /// any status OrderInternalStatus grows in the future, whereas an
-  /// enumerated switch fails to compile the moment it does, naming the exact
-  /// value that needs a decision.
-  ///
-  /// ASSUMPTION, stated because I have not seen order.dart itself:
-  /// OrderInternalStatus has exactly {pendingPayment, paymentProcessing,
-  /// paymentFailed, confirmed, packed, handedToCourier, outForDelivery,
-  /// delivered, cancelled} — the three payment states referenced here, plus
-  /// the six seen across firestore.rules' sellerTransitionAllowed() and
-  /// OrderTransitions.isLegal() elsewhere in this codebase this session. If
-  /// the real enum has additional members, this switch will fail to compile
-  /// with a clear "missing case" naming them.
   static String _stageExplanation(BuildContext context, Order order) {
     if (order.stage == CustomerOrderStage.confirmed) {
       switch (order.internalStatus) {
@@ -231,21 +204,6 @@ class _OrderDetailView extends StatelessWidget {
         case OrderInternalStatus.delivered:
         case OrderInternalStatus.cancelled:
           break;
-        // The member the first version of this enumeration missed —
-        // `flutter analyze` refused to compile rather than letting `refunded`
-        // silently fall through a default, which is the entire point of
-        // enumerating this switch instead of defaulting it.
-        //
-        // Left as `break`, matching every other status in this inner switch
-        // that is not one of the three payment states: it falls through to
-        // the outer `switch (order.stage)` below unchanged. That is a
-        // conservative placement, not a considered one — I have not seen
-        // whether CustomerOrderStage even has a case that reads correctly
-        // for a refunded order (the outer switch below only handles
-        // confirmed/onTheWay/delivered/cancelled), so this is very possibly
-        // wrong and is exactly the kind of thing worth checking rather than
-        // guessing a stage-facing sentence I cannot verify against the real
-        // CustomerOrderStage definition.
         case OrderInternalStatus.refunded:
           break;
       }
@@ -266,36 +224,39 @@ class _OrderDetailView extends StatelessWidget {
     final strings = receiptStringsFor(context, order);
     final bytes = await const ReceiptService().generate(
       order: order,
-      // The order carries no seller display name, so the receipt labels the
-      // party generically. Localized rather than left as the English word.
       sellerName: context.l10n.seller,
       strings: strings,
     );
-    // The platform share sheet, so the receipt can go to email, a chat, a
-    // printer or a file — whichever the person actually needs.
     await Printing.sharePdf(
       bytes: bytes,
       filename: 'wave-receipt-${order.id.substring(0, 6)}.pdf',
     );
   }
 
+  // FIXED: Replaced AlertDialog with our signature WaveSheet physics!
   Future<void> _confirmCancel(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await WaveSheet.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.cancelThisOrderQ),
-        content: Text(context.l10n.cancelOrderBuyerBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(context.l10n.keepIt),
-          ),
-          FilledButton(
+      title: context.l10n.cancelThisOrderQ,
+      builder: (context) => Text(
+        context.l10n.cancelOrderBuyerBody,
+        style: context.texts.body,
+      ),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          WaveButton(
+            variant: WaveButtonVariant.destructive,
+            expand: true,
+            label: context.l10n.cancelOrder,
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.waveColors.error,
-            ),
-            child: Text(context.l10n.cancelOrder),
+          ),
+          const SizedBox(height: WaveSpacing.x8),
+          WaveButton(
+            variant: WaveButtonVariant.tertiary,
+            expand: true,
+            label: context.l10n.keepIt,
+            onPressed: () => Navigator.pop(context, false),
           ),
         ],
       ),

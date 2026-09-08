@@ -5,8 +5,8 @@ import 'app_localizations.dart';
 // ignore_for_file: type=lint
 
 /// The translations for Arabic (`ar`).
-class AppL10nAr extends AppL10n {
-  AppL10nAr([String locale = 'ar']) : super(locale);
+class AppLocalizationsAr extends AppLocalizations {
+  AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
   String get appName => 'WAVE';
@@ -419,7 +419,7 @@ class AppL10nAr extends AppL10n {
 
   @override
   String get updateRequiredBody =>
-      'هذه النسخة لم تعد مدعومة. التحديث يستغرق لحظات، وسلتك وطلباتك بأمان.';
+      'هذه النسخة لم لم تعد مدعومة. التحديث يستغرق لحظات، وسلتك وطلباتك بأمان.';
 
   @override
   String get updateNow => 'حدّث الآن';
@@ -708,12 +708,12 @@ class AppL10nAr extends AppL10n {
   }
 
   @override
-  String durationOfMax(int actual, int max) {
+  String durationOfMax(int actual, Object max) {
     return '$actual ثانية من $max';
   }
 
   @override
-  String videoTooLong(int actual, int max) {
+  String videoTooLong(int actual, Object max) {
     return 'مدة الفيديو $actual ثانية. اقتصّه إلى $max ثانية أو أقل ثم اختره مجدداً.';
   }
 
@@ -788,7 +788,7 @@ class AppL10nAr extends AppL10n {
   String get open => 'فتح';
 
   @override
-  String viewsAndSold(int views, int sold) {
+  String viewsAndSold(int views, Object sold) {
     return '$views مشاهدة · بيع $sold';
   }
 
@@ -1008,7 +1008,7 @@ class AppL10nAr extends AppL10n {
   String get listAProductBody => 'أضف الصور والسعر والكمية.';
 
   @override
-  String versionUpdated(String version, String date) {
+  String versionUpdated(String version, Object date) {
     return 'الإصدار $version · حُدّث في $date';
   }
 
@@ -1155,12 +1155,12 @@ class AppL10nAr extends AppL10n {
   String get startBrowsing => 'ابدأ التصفّح';
 
   @override
-  String stepOfTotal(int current, int total) {
+  String stepOfTotal(int current, Object total) {
     return 'الخطوة $current من $total';
   }
 
   @override
-  String orderStatusSemantic(String status, int step) {
+  String orderStatusSemantic(String status, Object step) {
     return 'حالة الطلب: $status، الخطوة $step من ٣';
   }
 
@@ -1798,4 +1798,95 @@ class AppL10nAr extends AppL10n {
 
   @override
   String get systemDefault => 'الإعداد الافتراضي للنظام';
+
+  @override
+  String get quantityDecrease => 'إنقاص الكمية';
+
+  @override
+  String get quantityIncrease => 'زيادة الكمية';
+
+  @override
+  String get quantityLabel => 'الكمية';
+
+  @override
+  String get subtotal => 'المجموع الفرعي';
+
+  @override
+  String get pdpAddToCart => 'أضف إلى السلة';
+
+  @override
+  String get stockIn => 'متوفّر في المخزون';
+
+  @override
+  String get stockOut => 'نفدت الكمية';
+
+  @override
+  String stockLow(int count) {
+    return 'بقي $count فقط';
+  }
+
+  @override
+  String get quantityTitle => 'اختر الكمية';
+
+  @override
+  String get pdpDescription => 'عن هذا المنتج';
+
+  @override
+  String get commonBack => 'رجوع';
+
+  @override
+  String get pdpSoldBy => 'البائع';
+
+  @override
+  String pdpImageGallery(int index, int total) {
+    return 'الصورة $index من $total';
+  }
+
+  @override
+  String get cartAddedToCart => 'أُضيف إلى السلة';
+
+  @override
+  String get cartStockLimitReached => 'وصلت للحد الأقصى للمخزون';
+
+  @override
+  String get cartOutOfStock => 'نفدت الكمية';
+
+  @override
+  String get cartPromoApplied => 'تم تطبيق رمز الخصم';
+
+  @override
+  String get cartPromoInvalid => 'رمز الخصم غير صالح';
+
+  @override
+  String get cartPromoExpired => 'انتهت صلاحية رمز الخصم';
+
+  @override
+  String get cartPromoUsed => 'تم استخدام رمز الخصم مسبقاً';
+
+  @override
+  String get cartPromoBelowMinimum => 'الطلب أقل من الحد الأدنى للرمز';
+
+  @override
+  String get signInTitle => 'تسجيل الدخول';
+
+  @override
+  String get acceptTerms => 'أوافق على الشروط والأحكام';
+
+  @override
+  String get confirmAge => 'عمري ١٨ سنة أو أكثر';
+
+  @override
+  String get orContinueWith => 'أو المتابعة باستخدام';
+
+  @override
+  String get enterCodeSentToPhone => 'أدخل الرمز المرسل إلى هاتفك';
+
+  @override
+  String get verificationCode => 'رمز التحقق';
+
+  @override
+  String get verify => 'تأكيد';
+
+  @override
+  String get changePhoneNumber => 'تغيير رقم الهاتف';
 }

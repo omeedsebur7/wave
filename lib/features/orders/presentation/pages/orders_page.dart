@@ -6,9 +6,12 @@ import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
 import 'package:wave/features/orders/presentation/bloc/orders_bloc.dart';
 import 'package:wave/features/orders/presentation/widgets/order_tracker.dart';
@@ -38,7 +41,10 @@ class _OrdersView extends StatelessWidget {
             .showSnackBar(SnackBar(content: Text(failureText(context, state.failure!)))),
         builder: (context, state) {
           if (state.status == OrdersStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()), 
+              content: SizedBox.shrink(),
+            );
           }
 
           if (state.status == OrdersStatus.failure && state.orders.isEmpty) {
@@ -61,9 +67,9 @@ class _OrdersView extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
             itemCount: state.orders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: WaveSpacing.x12),
             itemBuilder: (context, i) => _OrderCard(order: state.orders[i]),
           );
         },
@@ -83,12 +89,12 @@ class _OrderCard extends StatelessWidget {
 
     return InkWell(
       onTap: () => context.push(Routes.orderDetailPath(order.id)),
-      borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+      borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
         decoration: BoxDecoration(
           border: Border.all(color: c.border),
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+          borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,18 +102,17 @@ class _OrderCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // A full UUID in a list is noise nobody reads.
                 Text(
                   '#${order.id.substring(0, 6).toUpperCase()}',
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED
                 ),
                 Text(
                   context.money(order.totalMinor, order.currency),
-                  style: context.texts.titleMedium,
+                  style: context.texts.title, // FIXED
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: WaveSpacing.x8),
             Text(
               order.items.isEmpty
                   ? context.l10n.orderFallbackTitle
@@ -117,19 +122,17 @@ class _OrderCard extends StatelessWidget {
                           : ''),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: context.texts.bodyMedium,
+              style: context.texts.body, // FIXED
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: WaveSpacing.x16),
             OrderTracker(stage: order.stage),
             if (order.canBeRated) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: () =>
-                      context.push(Routes.orderDetailPath(order.id)),
-                  child: Text(context.l10n.rateThisOrder),
-                ),
+              const SizedBox(height: WaveSpacing.x16),
+              WaveButton( // FIXED: FilledButton.tonal to WaveButton
+                variant: WaveButtonVariant.secondary,
+                expand: true,
+                label: context.l10n.rateThisOrder,
+                onPressed: () => context.push(Routes.orderDetailPath(order.id)),
               ),
             ],
           ],

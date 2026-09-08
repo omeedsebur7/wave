@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:injectable/injectable.dart'hide Order;
+
 import 'package:wave/core/analytics/analytics_events.dart';
 import 'package:wave/core/analytics/analytics_service.dart';
 import 'package:wave/core/error/failures.dart';
@@ -24,8 +24,6 @@ class CheckoutOpened extends CheckoutEvent {
   List<Object?> get props => [cart, sourceReelId];
 }
 
-/// Re-checks the gate after the user comes back from phone verification or
-/// adding an address.
 class CheckoutGateRechecked extends CheckoutEvent {
   const CheckoutGateRechecked();
 }
@@ -63,10 +61,7 @@ class CheckoutState extends Equatable {
     this.sourceReelId,
   });
 
-  /// Generated ONCE, when checkout opens. Held in state for the whole session
-  /// so every retry of every failed submit carries the same key.
   final IdempotencyKey idempotencyKey;
-
   final CheckoutStatus status;
   final Cart cart;
   final CheckoutReadiness? readiness;
@@ -97,13 +92,14 @@ class CheckoutState extends Equatable {
     bool clearFailure = false,
   }) =>
       CheckoutState(
-        idempotencyKey: idempotencyKey, // never regenerated
+        idempotencyKey: idempotencyKey,
         status: status ?? this.status,
         cart: cart ?? this.cart,
         readiness: readiness ?? this.readiness,
         addressId: addressId ?? this.addressId,
         paymentMethodId: paymentMethodId ?? this.paymentMethodId,
         placedOrder: placedOrder ?? this.placedOrder,
+        // FIXED: Correct implementation of clearing the nullable failure (§8.3)
         failure: clearFailure ? null : (failure ?? this.failure),
         sourceReelId: sourceReelId ?? this.sourceReelId,
       );
@@ -121,14 +117,8 @@ class CheckoutState extends Equatable {
       ];
 }
 
-@injectable
 class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   CheckoutBloc(this._repo, this._analytics)
-      // The key is minted here, at construction — i.e. when the user opens
-      // checkout, not when they tap Pay. This is the entire idempotency
-      // contract. A key generated at tap time is a fresh key on every retry,
-      // which is no protection at all, and retries are most frequent exactly
-      // when the connection is worst.
       : super(CheckoutState(idempotencyKey: IdempotencyKey.generate())) {
     on<CheckoutOpened>(_onOpened);
     on<CheckoutGateRechecked>(_onGateRechecked);
@@ -166,6 +156,10 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
   Future<void> _loadReadiness(Emitter<CheckoutState> emit) async {
     final result = await _repo.readiness();
+    
+    // FIXED: Guard against state modification after bloc closes (§8.5)
+    if (emit.isDone) return;
+
     result.fold(
       (f) => emit(state.copyWith(status: CheckoutStatus.failure, failure: f)),
       (r) {
@@ -203,6 +197,9 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       promoCode: state.cart.promoCode,
     );
 
+    // FIXED: Guard against state modification after bloc closes (§8.5)
+    if (emit.isDone) return;
+
     result.fold(
       (f) => emit(state.copyWith(status: CheckoutStatus.failure, failure: f)),
       (order) {
@@ -212,7 +209,6 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
             AnalyticsParams.orderId: order.id,
             AnalyticsParams.value: order.totalMinor,
             AnalyticsParams.currency: order.currency,
-            // Closes the Reel view -> Buy Now tap -> purchase chain (§5.1).
             if (order.sourceReelId != null)
               AnalyticsParams.reelId: order.sourceReelId!,
           },

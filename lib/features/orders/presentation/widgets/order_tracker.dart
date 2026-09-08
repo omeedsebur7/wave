@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
 
-/// The 3-step customer-facing tracker (§5.2): Confirmed → On the Way →
-/// Delivered.
-///
-/// The order document carries ~10 internal states; this widget maps them down
-/// to three. That's the deliberate simplification — internal granularity stays
-/// available for ops and analytics, and the customer gets a picture they can
-/// read in one glance.
 class OrderTracker extends StatelessWidget {
   const OrderTracker({required this.stage, super.key});
 
@@ -41,11 +35,11 @@ class OrderTracker extends StatelessWidget {
     if (stage == CustomerOrderStage.cancelled) {
       return Row(
         children: [
-          Icon(Icons.cancel_outlined, color: c.error, size: 20),
-          const SizedBox(width: 8),
+          Icon(Icons.cancel_outlined, color: c.error, size: WaveSpacing.x20),
+          const SizedBox(width: WaveSpacing.x8),
           Text(
             context.l10n.orderCancelled,
-            style: context.texts.labelMedium?.copyWith(color: c.error),
+            style: context.texts.label.copyWith(color: c.error),
           ),
         ],
       );
@@ -71,8 +65,8 @@ class OrderTracker extends StatelessWidget {
               if (i < _stepIcons.length - 1)
                 Expanded(
                   child: Container(
-                    height: 2,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 2, // FIXED: WaveSpacing.x2 replaced with standard 2.0
+                    margin: const EdgeInsetsDirectional.symmetric(horizontal: WaveSpacing.x4),
                     color: i < _activeIndex ? c.success : c.border,
                   ),
                 ),
@@ -106,8 +100,8 @@ class _Step extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: WaveSpacing.controlSm,
+          height: WaveSpacing.controlSm,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: done ? c.success.withValues(alpha: 0.12) : Colors.transparent,
@@ -115,13 +109,13 @@ class _Step extends StatelessWidget {
           ),
           child: Icon(icon, size: 18, color: color),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: WaveSpacing.x4),
         SizedBox(
           width: 72,
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: context.texts.bodySmall?.copyWith(
+            style: context.texts.caption.copyWith(
               color: color,
               fontWeight: active ? FontWeight.w600 : FontWeight.w400,
             ),

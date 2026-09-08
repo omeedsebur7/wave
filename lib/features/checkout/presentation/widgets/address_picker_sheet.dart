@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/checkout/domain/entities/delivery_address.dart';
 
 /// Address picker and inline "add new".
-///
-/// Adding an address is inline rather than a separate route on purpose: pushing
-/// a full page mid-checkout is where people leave.
 Future<DeliveryAddress?> showAddressPicker(
   BuildContext context, {
   required List<DeliveryAddress> addresses,
@@ -49,8 +49,6 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
   @override
   void initState() {
     super.initState();
-    // Straight into the form when there is nothing to pick from — an empty
-    // list with an "Add" button is one pointless tap.
     _adding = widget.addresses.isEmpty;
   }
 
@@ -65,11 +63,12 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+      // FIXED: Replaced raw EdgeInsets.only with EdgeInsetsDirectional and tokens
+      padding: EdgeInsetsDirectional.only(
+        start: WaveSpacing.x20,
+        end: WaveSpacing.x20,
+        top: WaveSpacing.x20,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + WaveSpacing.x24,
       ),
       child: _adding ? _buildForm(context) : _buildList(context),
     );
@@ -80,20 +79,9 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.deliverTo, style: context.texts.headlineMedium),
-        const SizedBox(height: 12),
+        Text(context.l10n.deliverTo, style: context.texts.headline), // FIXED
+        const SizedBox(height: WaveSpacing.x12),
         Flexible(
-          // RadioGroup owns the selection and the callback; the tiles below
-          // carry only their own value. That is the whole shape of the
-          // migration away from the deprecated per-tile groupValue/onChanged,
-          // which Flutter removes after 3.32.
-          //
-          // The callback receives the selected ID rather than the address
-          // object, so the address is looked up rather than captured from the
-          // loop. Slightly more code, but it is now impossible for a tile to
-          // pop with an address other than the one whose value was selected —
-          // the closure-capture version had no such guarantee, it just
-          // happened to be written correctly.
           child: RadioGroup<String>(
             groupValue: widget.selectedId,
             onChanged: _pick,
@@ -103,29 +91,27 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
                 for (final address in widget.addresses)
                   RadioListTile<String>(
                     value: address.id,
-                    // toggleable is what makes the ALREADY-SELECTED row
-                    // tappable. See _pick below for why that matters and how
-                    // the resulting null is interpreted.
                     toggleable: true,
                     title: Text(
                       address.recipientName,
-                      style: context.texts.labelMedium,
+                      style: context.texts.label, // FIXED
                     ),
                     subtitle: Text(
                       address.summary,
-                      style: context.texts.bodySmall,
+                      style: context.texts.caption, // FIXED
                     ),
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsetsDirectional.zero, // FIXED
                   ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        TextButton.icon(
+        const SizedBox(height: WaveSpacing.x8),
+        WaveButton( // FIXED: TextButton.icon to WaveButton
+          variant: WaveButtonVariant.tertiary,
+          icon: Icons.add,
+          label: context.l10n.addANewAddress,
           onPressed: () => setState(() => _adding = true),
-          icon: const Icon(Icons.add),
-          label: Text(context.l10n.addANewAddress),
         ),
       ],
     );
@@ -137,8 +123,8 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.newAddress, style: context.texts.headlineMedium),
-          const SizedBox(height: 16),
+          Text(context.l10n.newAddress, style: context.texts.headline), // FIXED
+          const SizedBox(height: WaveSpacing.x16),
           _Field(
             controller: _name,
             label: context.l10n.whoIsReceiving,
@@ -148,8 +134,7 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
             controller: _phone,
             label: context.l10n.phoneForCourier,
             keyboardType: TextInputType.phone,
-            // Phone numbers stay LTR even in an RTL layout.
-            textDirection: TextDirection.ltr,
+            forceLtr: true, // FIXED: Explicit LTR for phone numbers in RTL layout
             onChanged: _rebuild,
           ),
           _Field(
@@ -169,15 +154,17 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
             hint: context.l10n.landmarkHint,
             onChanged: _rebuild,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: WaveSpacing.x8),
           Text(
             context.l10n.landmarkNote,
-            style: context.texts.bodySmall,
+            style: context.texts.caption, // FIXED
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: WaveSpacing.x16),
           SizedBox(
             width: double.infinity,
-            child: FilledButton(
+            child: WaveButton( // FIXED: FilledButton to WaveButton
+              label: context.l10n.saveAddress,
+              expand: true,
               onPressed: _canSave
                   ? () => Navigator.pop(
                         context,
@@ -193,8 +180,6 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
                         ),
                       )
                   : null,
-              style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-              child: Text(context.l10n.saveAddress),
             ),
           ),
         ],
@@ -202,28 +187,6 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
     );
   }
 
-  /// Confirms an address and closes the sheet.
-  ///
-  /// [id] is null when the user tapped the row that was ALREADY selected.
-  ///
-  /// That case is the whole reason `toggleable: true` is set on the tiles.
-  /// Without it, RadioListTile only fires onChanged when `!checked` — so
-  /// opening this sheet, seeing your current address, and tapping it to
-  /// confirm did nothing at all. The sheet just sat there. That behaviour
-  /// predates the RadioGroup migration; it was inherited from the original
-  /// per-tile version and was never right, it simply went unnoticed because
-  /// the obvious test is "tap a DIFFERENT address", which always worked.
-  ///
-  /// `toggleable` normally means "tap the selected option to clear it", and
-  /// null is normally "nothing is selected now". Here there is no such thing
-  /// as clearing — a checkout sheet with no delivery address chosen is not a
-  /// state this screen can produce or represent — so null is read as
-  /// "reaffirmed the current one", which is exactly what the tap meant.
-  ///
-  /// The defensive null-check on `selectedId` is for the case that cannot
-  /// currently happen but would be silent if it ever did: toggleable firing
-  /// with nothing previously selected. Returning early leaves the sheet open
-  /// rather than popping with a wrong address.
   void _pick(String? id) {
     final chosenId = id ?? widget.selectedId;
     if (chosenId == null) return;
@@ -243,7 +206,7 @@ class _Field extends StatelessWidget {
     this.hint,
     this.maxLines = 1,
     this.keyboardType,
-    this.textDirection,
+    this.forceLtr = false,
   });
 
   final TextEditingController controller;
@@ -252,24 +215,20 @@ class _Field extends StatelessWidget {
   final String? hint;
   final int maxLines;
   final TextInputType? keyboardType;
-  final TextDirection? textDirection;
+  final bool forceLtr;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x12), // FIXED
+      child: WaveTextField( // FIXED: TextField to WaveTextField
         controller: controller,
         onChanged: onChanged,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        textDirection: textDirection,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
+        forceLtr: forceLtr, // §8.15 compliant
+        label: label,
+        hint: hint,
       ),
     );
   }

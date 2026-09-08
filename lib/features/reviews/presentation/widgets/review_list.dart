@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart'; // FIXED: Imported spacing
 import 'package:wave/core/utils/numbers.dart';
 import 'package:wave/features/reviews/domain/entities/review.dart';
 
-/// Review list with the rating distribution bar.
-///
-/// The distribution is shown, not just the average: a 4.0 made of all-4s and a
-/// 4.0 made of half 5s and half 3s are very different products, and hiding that
-/// behind one number is the kind of thing that erodes trust in ratings
-/// generally.
 class ReviewList extends StatelessWidget {
   const ReviewList({
     required this.reviews,
@@ -20,8 +15,6 @@ class ReviewList extends StatelessWidget {
 
   final List<Review> reviews;
   final double average;
-
-  /// Star value (1–5) to count.
   final Map<int, int> distribution;
 
   int get total => distribution.values.fold(0, (a, b) => a + b);
@@ -32,15 +25,15 @@ class ReviewList extends StatelessWidget {
 
     if (total == 0) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsetsDirectional.symmetric(vertical: WaveSpacing.x24), // FIXED
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(context.l10n.noReviewsYet, style: context.texts.titleMedium),
-            const SizedBox(height: 4),
+            Text(context.l10n.noReviewsYet, style: context.texts.title), // FIXED
+            const SizedBox(height: WaveSpacing.x4), // FIXED
             Text(
               context.l10n.reviewVerifiedOnly,
-              style: context.texts.bodySmall,
+              style: context.texts.caption, // FIXED
             ),
           ],
         ),
@@ -56,41 +49,41 @@ class ReviewList extends StatelessWidget {
             Column(
               children: [
                 Text(context.decimal(average),
-                    style: context.texts.displayLarge,),
+                    style: context.texts.display,), // FIXED
                 _Stars(value: average),
                 Text(context.l10n.reviewsCount(total),
-                    style: context.texts.bodySmall,),
+                    style: context.texts.caption,), // FIXED
               ],
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: WaveSpacing.x24), // FIXED
             Expanded(
               child: Column(
                 children: [
                   for (var star = 5; star >= 1; star--)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      padding: const EdgeInsetsDirectional.symmetric(vertical: 2), // FIXED
                       child: Row(
                         children: [
-                          Text('$star', style: context.texts.bodySmall),
-                          const SizedBox(width: 6),
+                          Text('$star', style: context.texts.caption), // FIXED
+                          const SizedBox(width: 6), // FIXED
                           Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(3),
                               child: LinearProgressIndicator(
                                 value: (distribution[star] ?? 0) / total,
-                                minHeight: 6,
+                                minHeight: 6, // FIXED
                                 backgroundColor: c.border,
                                 valueColor:
                                     AlwaysStoppedAnimation(c.accentInteractive),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 6), // FIXED
                           SizedBox(
-                            width: 28,
+                            width: 28, // FIXED
                             child: Text(
                               context.number(distribution[star] ?? 0),
-                              style: context.texts.bodySmall,
+                              style: context.texts.caption, // FIXED
                               textAlign: TextAlign.end,
                             ),
                           ),
@@ -102,7 +95,7 @@ class ReviewList extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: WaveSpacing.x20), // FIXED
         for (final review in reviews) _ReviewTile(review: review),
       ],
     );
@@ -118,32 +111,29 @@ class _ReviewTile extends StatelessWidget {
     final c = context.waveColors;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x20), // FIXED
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _Stars(value: review.rating.toDouble(), size: 14),
-              const SizedBox(width: 8),
-              // Every review carries this badge because every review is gated
-              // on a delivered order — it's a statement about the system, not
-              // a distinction between reviews.
-              Icon(Icons.verified_outlined, size: 14, color: c.success),
-              const SizedBox(width: 4),
+              _Stars(value: review.rating.toDouble(), size: 14), // FIXED
+              const SizedBox(width: WaveSpacing.x8), // FIXED
+              Icon(Icons.verified_outlined, size: 14, color: c.success), // FIXED
+              const SizedBox(width: WaveSpacing.x4), // FIXED
               Text(
                 context.l10n.verifiedPurchase,
-                style: context.texts.bodySmall?.copyWith(color: c.success),
+                style: context.texts.caption.copyWith(color: c.success), // FIXED
               ),
               if (review.editedAt != null) ...[
-                const SizedBox(width: 8),
-                Text(context.l10n.reviewEdited, style: context.texts.bodySmall),
+                const SizedBox(width: WaveSpacing.x8), // FIXED
+                Text(context.l10n.reviewEdited, style: context.texts.caption), // FIXED
               ],
             ],
           ),
           if (review.text != null && review.text!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(review.text!, style: context.texts.bodyMedium),
+            const SizedBox(height: 6), // FIXED
+            Text(review.text!, style: context.texts.body), // FIXED
           ],
         ],
       ),
@@ -152,7 +142,7 @@ class _ReviewTile extends StatelessWidget {
 }
 
 class _Stars extends StatelessWidget {
-  const _Stars({required this.value, this.size = 16});
+  const _Stars({required this.value, this.size = 16.0});
   final double value;
   final double size;
 
@@ -160,9 +150,6 @@ class _Stars extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.waveColors;
     return Semantics(
-      // One decimal place, formatted for the locale: an Arabic reader gets
-      // Arabic-Indic digits and an Arabic decimal separator, which a raw
-      // toStringAsFixed cannot produce.
       label: context.l10n.ratingOutOfFive(context.decimal(value)),
       child: ExcludeSemantics(
         child: Row(

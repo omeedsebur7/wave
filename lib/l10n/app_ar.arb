@@ -129,7 +129,7 @@
   "next": "التالي",
   "skip": "تخطٍ",
   "updateRequiredTitle": "حدّث WAVE للمتابعة",
-  "updateRequiredBody": "هذه النسخة لم تعد مدعومة. التحديث يستغرق لحظات، وسلتك وطلباتك بأمان.",
+  "updateRequiredBody": "هذه النسخة لم لم تعد مدعومة. التحديث يستغرق لحظات، وسلتك وطلباتك بأمان.",
   "updateNow": "حدّث الآن",
   "acceptAndContinue": "أوافق وأتابع",
   "profile": "الملف الشخصي",
@@ -534,5 +534,51 @@
   "productCardSemantic": "{title}، {price}",
   "statSemantic": "{value} {label}",
   "updateSearchStoreManually": "ابحث عن WAVE في متجر التطبيقات للتحديث.",
-  "systemDefault": "الإعداد الافتراضي للنظام"
+  "systemDefault": "الإعداد الافتراضي للنظام",
+  "quantityDecrease": "إنقاص الكمية",
+  "quantityIncrease": "زيادة الكمية",
+  "quantityLabel": "الكمية",
+  "subtotal": "المجموع الفرعي",
+  "pdpAddToCart": "أضف إلى السلة",
+  "stockIn": "متوفّر في المخزون",
+  "stockOut": "نفدت الكمية",
+  "stockLow": "بقي {count} فقط",
+  "@stockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quantityTitle": "اختر الكمية",
+  "pdpDescription": "عن هذا المنتج",
+  "commonBack": "رجوع",
+  "pdpSoldBy": "البائع",
+  "pdpImageGallery": "الصورة {index} من {total}",
+  "@pdpImageGallery": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cartAddedToCart": "أُضيف إلى السلة",
+  "cartStockLimitReached": "وصلت للحد الأقصى للمخزون",
+  "cartOutOfStock": "نفدت الكمية",
+  "cartPromoApplied": "تم تطبيق رمز الخصم",
+  "cartPromoInvalid": "رمز الخصم غير صالح",
+  "cartPromoExpired": "انتهت صلاحية رمز الخصم",
+  "cartPromoUsed": "تم استخدام رمز الخصم مسبقاً",
+  "cartPromoBelowMinimum": "الطلب أقل من الحد الأدنى للرمز",
+  "signInTitle": "تسجيل الدخول",
+  "acceptTerms": "أوافق على الشروط والأحكام",
+  "confirmAge": "عمري ١٨ سنة أو أكثر",
+  "orContinueWith": "أو المتابعة باستخدام",
+  "enterCodeSentToPhone": "أدخل الرمز المرسل إلى هاتفك",
+  "verificationCode": "رمز التحقق",
+  "verify": "تأكيد",
+  "changePhoneNumber": "تغيير رقم الهاتف"
 }

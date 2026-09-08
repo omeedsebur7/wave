@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/services/block_list.dart';
 import 'package:wave/core/utils/rate_limiter.dart';
 import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/chat/domain/entities/conversation.dart';
 
-@lazySingleton
+
 class ChatRepository {
   ChatRepository(this._db, this._auth, this._blocks);
 

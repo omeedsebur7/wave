@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
 import 'package:wave/features/trust/domain/entities/trust_tier.dart';
 
-/// Trust-tier badge (§3.7).
-///
-/// Hard rule: this widget ALWAYS renders an icon plus a text label alongside
-/// the colour. Never a bare colour swatch. Two reasons — WCAG 1.4.1, and the
-/// fact that Gold necessarily shares the amber family with the `warning`
-/// semantic colour, so a colour-only badge could genuinely be misread as a
-/// stock or payment warning. The label removes that ambiguity entirely.
 class TrustBadge extends StatelessWidget {
   const TrustBadge({
     required this.tier,
@@ -20,14 +12,7 @@ class TrustBadge extends StatelessWidget {
   });
 
   final TrustTier tier;
-
-  /// Compact drops the label to an icon + tooltip for tight card corners —
-  /// the semantic label is still exposed to screen readers.
   final bool compact;
-
-  /// A manually/KYC-verified seller shows the existing `success` token, which
-  /// §3.2 already defines as covering "verified seller". Separate axis from
-  /// the rating-driven tier.
   final bool isKycVerified;
 
   Color _color(BuildContext context) {
@@ -37,7 +22,7 @@ class TrustBadge extends StatelessWidget {
       TrustTier.silver => t.silver,
       TrustTier.gold => t.gold,
       TrustTier.platinum => t.platinum,
-      TrustTier.newSeller => context.waveColors.border,
+      TrustTier.newSeller => context.waveColors.textTertiary,
     };
   }
 
@@ -59,8 +44,12 @@ class TrustBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.waveColors;
+    final t = context.texts;
+    final s = context.spacing;
+
     final color = isKycVerified && !tier.hasBadge
-        ? context.waveColors.success
+        ? c.success
         : _color(context);
     final label = isKycVerified && !tier.hasBadge
         ? context.l10n.trustVerifiedSeller
@@ -72,27 +61,24 @@ class TrustBadge extends StatelessWidget {
       child: Tooltip(
         message: label,
         child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 6 : 10,
-            vertical: 4,
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: compact ? s.x8 : s.x12,
+            vertical: s.x4,
           ),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
-            border: Border.all(color: color.withValues(alpha: 0.4)),
+            borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(_icon, size: 14, color: color),
+              Icon(_icon, size: s.x16, color: color),
               if (!compact) ...[
-                const SizedBox(width: 6),
-                // ExcludeSemantics because the Semantics wrapper above already
-                // announces the label — otherwise a screen reader says it twice.
+                SizedBox(width: s.x4),
                 ExcludeSemantics(
                   child: Text(
                     label,
-                    style: context.texts.bodySmall?.copyWith(
+                    style: t.caption.copyWith(
                       color: color,
                       fontWeight: FontWeight.w600,
                     ),

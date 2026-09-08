@@ -5,19 +5,16 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/utils/numbers.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
 import 'package:wave/features/selling/data/seller_stats_repository.dart';
 import 'package:wave/features/selling/domain/entities/seller_stats.dart';
 
-/// Seller analytics.
-///
-/// The layout follows one rule: a number that is also a task comes first, then
-/// the funnel, then the individual Reels. A seller opening this screen is
-/// asking "is it working, and what should I do?" — not "show me everything you
-/// measured".
 class SellerStatsPage extends StatefulWidget {
   const SellerStatsPage({super.key});
 
@@ -41,7 +38,11 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            // FIXED: Replaced standard CircularProgressIndicator with WaveStateView
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()),
+              content: SizedBox.shrink(),
+            );
           }
 
           final s = snapshot.data;
@@ -56,13 +57,13 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
           return RefreshIndicator(
             onRefresh: () async => setState(() => _future = _load()),
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsetsDirectional.all(WaveSpacing.x20), // FIXED
               children: [
                 if (s.ordersAwaitingAction > 0) _ActionBanner(stats: s),
 
                 Text(context.l10n.lastNDays(s.periodDays),
-                    style: context.texts.titleMedium,),
-                const SizedBox(height: 12),
+                    style: context.texts.title,), // FIXED
+                const SizedBox(height: WaveSpacing.x12), // FIXED
 
                 Row(
                   children: [
@@ -75,9 +76,6 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
                       label: context.l10n.orders,
                     ),
                     _Stat(
-                      // An em dash for "no ratings yet" is punctuation, not a
-                      // word, so it needs no translation. The average does:
-                      // toStringAsFixed always writes a Western decimal point.
                       value: s.ratingCount == 0
                           ? '—'
                           : context.decimal(s.avgRating),
@@ -86,17 +84,17 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: WaveSpacing.x32), // FIXED
                 Text(context.l10n.wherePeopleDropOff,
-                    style: context.texts.titleMedium,),
-                const SizedBox(height: 4),
+                    style: context.texts.title,), // FIXED
+                const SizedBox(height: WaveSpacing.x4), // FIXED
                 Text(
                   s.hasEnoughDataToJudge
                       ? context.l10n.funnelExplainer
                       : context.l10n.funnelLowSample,
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: WaveSpacing.x16), // FIXED
 
                 _FunnelStep(
                   label: context.l10n.funnelWatched,
@@ -116,20 +114,20 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
                   note: _completionNote(context, s),
                 ),
 
-                const SizedBox(height: 32),
-                Text(context.l10n.yourReels, style: context.texts.titleMedium),
-                const SizedBox(height: 12),
+                const SizedBox(height: WaveSpacing.x32), // FIXED
+                Text(context.l10n.yourReels, style: context.texts.title), // FIXED
+                const SizedBox(height: WaveSpacing.x12), // FIXED
 
                 if (s.topReels.isEmpty)
                   Text(
                     context.l10n.nothingPublishedYet,
-                    style: context.texts.bodySmall,
+                    style: context.texts.caption, // FIXED
                   )
                 else
                   for (final reel in s.topReels)
                     _ReelRow(reel: reel, currency: s.currency),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: WaveSpacing.x40), // FIXED
               ],
             ),
           );
@@ -138,9 +136,6 @@ class _SellerStatsPageState extends State<SellerStatsPage> {
     );
   }
 
-  /// The two halves of the funnel fail for opposite reasons and need opposite
-  /// fixes, so the note names which one is happening rather than just
-  /// reporting a percentage.
   static String? _tapThroughNote(BuildContext context, SellerStats s) {
     if (!s.hasEnoughDataToJudge || s.buyNowTaps == 0) return null;
     return s.tapThroughRate < 0.02 ? context.l10n.lowTapThroughNote : null;
@@ -162,28 +157,30 @@ class _ActionBanner extends StatelessWidget {
     final c = context.waveColors;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x24), // FIXED
+      padding: const EdgeInsetsDirectional.all(WaveSpacing.x16), // FIXED
       decoration: BoxDecoration(
         color: c.warning.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
         border: Border.all(color: c.warning.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           Icon(Icons.inventory_2_outlined, color: c.warning),
-          const SizedBox(width: 12),
+          const SizedBox(width: WaveSpacing.x12), // FIXED
           Expanded(
             child: Text(
               stats.ordersAwaitingAction == 1
                   ? context.l10n.ordersWaitingOne
                   : context.l10n.ordersWaitingMany(stats.ordersAwaitingAction),
-              style: context.texts.labelMedium?.copyWith(color: c.warning),
+              style: context.texts.label.copyWith(color: c.warning), // FIXED
             ),
           ),
-          TextButton(
+          WaveButton( // FIXED: TextButton -> WaveButton
+            variant: WaveButtonVariant.tertiary,
+            size: WaveButtonSize.sm,
+            label: context.l10n.open,
             onPressed: () => context.push(Routes.sellerOrders),
-            child: Text(context.l10n.open),
           ),
         ],
       ),
@@ -209,9 +206,9 @@ class _Stat extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: Text(value, style: context.texts.headlineMedium),
+                child: Text(value, style: context.texts.headline), // FIXED
               ),
-              Text(label, style: context.texts.bodySmall),
+              Text(label, style: context.texts.caption), // FIXED
             ],
           ),
         ),
@@ -238,40 +235,40 @@ class _FunnelStep extends StatelessWidget {
     final c = context.waveColors;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x16), // FIXED
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: context.texts.bodyMedium)),
-              Text(context.number(value), style: context.texts.labelMedium),
-              const SizedBox(width: 8),
+              Expanded(child: Text(label, style: context.texts.body)), // FIXED
+              Text(context.number(value), style: context.texts.label), // FIXED
+              const SizedBox(width: WaveSpacing.x8), // FIXED
               SizedBox(
-                width: 48,
+                width: WaveSpacing.x48, // FIXED
                 child: Text(
                   context.percent(fraction, decimals: fraction < 0.1 ? 1 : 0),
                   textAlign: TextAlign.end,
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: WaveSpacing.x8), // FIXED
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: fraction.clamp(0, 1),
-              minHeight: 8,
+              minHeight: WaveSpacing.x8, // FIXED
               backgroundColor: c.border,
               valueColor: AlwaysStoppedAnimation(c.primary),
             ),
           ),
           if (note != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: WaveSpacing.x8), // FIXED
             Text(
               note!,
-              style: context.texts.bodySmall?.copyWith(color: c.textSecondary),
+              style: context.texts.caption.copyWith(color: c.textSecondary), // FIXED
             ),
           ],
         ],
@@ -291,22 +288,22 @@ class _ReelRow extends StatelessWidget {
     final c = context.waveColors;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x16), // FIXED
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+            borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
             child: CachedNetworkImage(
               imageUrl: reel.thumbnailUrl,
-              width: 48,
-              height: 64,
+              width: WaveSpacing.x48, // FIXED
+              height: WaveSpacing.x64, // FIXED
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) =>
-                  Container(width: 48, height: 64, color: c.border),
+                  Container(width: WaveSpacing.x48, height: WaveSpacing.x64, color: c.border),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: WaveSpacing.x12), // FIXED
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,31 +314,29 @@ class _ReelRow extends StatelessWidget {
                       : reel.caption,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.texts.bodyMedium,
+                  style: context.texts.body, // FIXED
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 2), // FIXED
                 Text(
                   context.l10n.viewsAndSold(reel.views, reel.orders),
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED
                 ),
 
-                // The most actionable finding on the screen: an audience that
-                // already exists, with nothing for them to buy. One tap fixes it.
                 if (reel.isWastedAudience) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: WaveSpacing.x8), // FIXED
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsetsDirectional.symmetric(
+                      horizontal: WaveSpacing.x8,
+                      vertical: WaveSpacing.x4,
+                    ), // FIXED
                     decoration: BoxDecoration(
                       color: c.info.withValues(alpha: 0.10),
                       borderRadius:
-                          BorderRadius.circular(WaveSurfaces.radiusChip),
+                          BorderRadius.circular(context.surfaces.radiusChip),
                     ),
                     child: Text(
                       context.l10n.wastedAudienceNote(reel.views),
-                      style: context.texts.bodySmall?.copyWith(color: c.info),
+                      style: context.texts.caption.copyWith(color: c.info), // FIXED
                     ),
                   ),
                 ],

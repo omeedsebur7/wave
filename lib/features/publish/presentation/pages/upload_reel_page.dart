@@ -10,8 +10,12 @@ import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/widgets/directional_chevron.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/onboarding/data/onboarding_service.dart';
 import 'package:wave/features/publish/data/reel_upload_service.dart';
 import 'package:wave/features/publish/presentation/bloc/upload_reel_bloc.dart';
@@ -47,34 +51,35 @@ class _UploadReelViewState extends State<_UploadReelView> {
   @override
   void dispose() {
     _caption.dispose();
-    // The preview holds a native decoder like any other player. Not disposing
-    // it leaks one per visit to this screen.
     _preview?.dispose();
     super.dispose();
   }
 
-  /// Explains why the camera roll is needed before the OS asks.
-  ///
-  /// iOS gives one prompt: a denial cannot be re-requested in-app, only sent to
-  /// Settings, which almost nobody does. Spending it cold — on a screen the
-  /// user opened for another reason — wastes the only chance.
   Future<bool> _primeMediaAccess(BuildContext context) async {
     final onboarding = getIt<OnboardingService>();
     if (onboarding.hasPrimed(PrimedPermission.camera)) return true;
 
-    final proceed = await showDialog<bool>(
+    final proceed = await WaveSheet.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.chooseAVideo),
-        content: Text(context.l10n.mediaAccessRationale),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
+      title: context.l10n.chooseAVideo,
+      builder: (context) => Text(
+        context.l10n.mediaAccessRationale, 
+        style: context.texts.body,
+      ),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          WaveButton(
+            expand: true,
+            label: context.l10n.next,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(context.l10n.next),
+          ),
+          const SizedBox(height: WaveSpacing.x8),
+          WaveButton(
+            expand: true,
+            variant: WaveButtonVariant.tertiary,
+            label: context.l10n.cancel,
+            onPressed: () => Navigator.pop(context, false),
           ),
         ],
       ),
@@ -93,8 +98,6 @@ class _UploadReelViewState extends State<_UploadReelView> {
 
     final picked = await ImagePicker().pickVideo(
       source: ImageSource.gallery,
-      // A soft cap at the picker level. iOS honours it by trimming; Android
-      // ignores it, which is why the real check happens below regardless.
       maxDuration: const Duration(
         seconds: ReelUploadService.maxDurationSeconds,
       ),
@@ -103,7 +106,6 @@ class _UploadReelViewState extends State<_UploadReelView> {
 
     final file = File(picked.path);
 
-    // Read the true duration from the file rather than trusting the picker.
     await _preview?.dispose();
     final controller = VideoPlayerController.file(file);
     await controller.initialize();
@@ -150,26 +152,26 @@ class _UploadReelViewState extends State<_UploadReelView> {
       },
       builder: (context, state) {
         return PopScope(
-          // Leaving mid-upload would abandon the transfer with no way back to
-          // it. Uploading is short; blocking the gesture is less confusing than
-          // silently losing the work.
           canPop: !state.isUploading,
           child: Scaffold(
             appBar: AppBar(
               title: Text(context.l10n.newReel),
               actions: [
-                TextButton(
+                WaveButton(
+                  variant: WaveButtonVariant.tertiary,
+                  size: WaveButtonSize.sm,
+                  label: context.l10n.publish,
+                  isLoading: state.isUploading,
                   onPressed: state.canPublish
                       ? () => context
                           .read<UploadReelBloc>()
                           .add(const PublishRequested())
                       : null,
-                  child: Text(context.l10n.publish),
                 ),
               ],
             ),
             body: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsetsDirectional.all(WaveSpacing.x20),
               children: [
                 _VideoSlot(
                   preview: _preview,
@@ -179,25 +181,23 @@ class _UploadReelViewState extends State<_UploadReelView> {
                 ),
 
                 if (state.durationSeconds != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: WaveSpacing.x8),
                   Text(
                     context.l10n.durationOfMax(
                       state.durationSeconds!,
                       ReelUploadService.maxDurationSeconds,
                     ),
-                    style: context.texts.bodySmall?.copyWith(
+                    style: context.texts.caption.copyWith(
                       color: state.isTooLong ? c.error : c.textSecondary,
                     ),
                   ),
                 ],
 
                 if (state.isTooLong) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: WaveSpacing.x12),
                   _Banner(
                     icon: Icons.error_outline,
                     colour: c.error,
-                    // Names the real number and what to do, rather than a
-                    // generic "invalid video".
                     text: context.l10n.videoTooLong(
                       state.durationSeconds!,
                       ReelUploadService.maxDurationSeconds,
@@ -205,31 +205,26 @@ class _UploadReelViewState extends State<_UploadReelView> {
                   ),
                 ],
 
-                const SizedBox(height: 20),
-                TextField(
+                const SizedBox(height: WaveSpacing.x20),
+                WaveTextField(
                   controller: _caption,
                   enabled: !state.isUploading,
                   maxLines: 3,
-                  maxLength: 300,
-                  textCapitalization: TextCapitalization.sentences,
+                  label: context.l10n.caption,
+                  hint: context.l10n.captionHint,
                   onChanged: (v) =>
                       context.read<UploadReelBloc>().add(CaptionChanged(v)),
-                  decoration: InputDecoration(
-                    labelText: context.l10n.caption,
-                    hintText: context.l10n.captionHint,
-                    border: const OutlineInputBorder(),
-                  ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: WaveSpacing.x8),
                 _ProductLinkTile(state: state),
 
                 if (state.progress != null) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: WaveSpacing.x24),
                   _UploadProgress(progress: state.progress!),
                 ],
 
-                const SizedBox(height: 40),
+                const SizedBox(height: WaveSpacing.x40),
               ],
             ),
           ),
@@ -264,7 +259,7 @@ class _VideoSlot extends StatelessWidget {
         children: [
           if (ready)
             ClipRRect(
-              borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+              borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
               child: FittedBox(
                 fit: BoxFit.cover,
                 child: SizedBox(
@@ -277,29 +272,29 @@ class _VideoSlot extends StatelessWidget {
           else
             InkWell(
               onTap: onPick,
-              borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+              borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: c.surface,
                   border: Border.all(color: c.border),
                   borderRadius:
-                      BorderRadius.circular(WaveSurfaces.radiusCard),
+                      BorderRadius.circular(context.surfaces.radiusCard),
                 ),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.video_library_outlined,
-                          size: 40, color: c.textSecondary,),
-                      const SizedBox(height: 12),
+                          size: WaveSpacing.x40, color: c.textSecondary,),
+                      const SizedBox(height: WaveSpacing.x12),
                       Text(context.l10n.chooseAVideo,
-                          style: context.texts.labelMedium,),
-                      const SizedBox(height: 4),
+                          style: context.texts.label,),
+                      const SizedBox(height: WaveSpacing.x4),
                       Text(
                         context.l10n.upToNSeconds(
                           ReelUploadService.maxDurationSeconds,
                         ),
-                        style: context.texts.bodySmall,
+                        style: context.texts.caption,
                       ),
                     ],
                   ),
@@ -309,13 +304,13 @@ class _VideoSlot extends StatelessWidget {
 
           if (hasVideo)
             PositionedDirectional(
-              top: 8,
-              end: 8,
+              top: WaveSpacing.x8,
+              end: WaveSpacing.x8,
               child: Material(
-                color: Colors.black54,
+                color: c.scrim, // FIXED
                 shape: const CircleBorder(),
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                  icon: Icon(Icons.close, color: c.onScrim, size: WaveSpacing.x20), // FIXED
                   tooltip: context.l10n.chooseADifferentVideo,
                   onPressed: onClear,
                 ),
@@ -338,26 +333,24 @@ class _ProductLinkTile extends StatelessWidget {
     final linked = state.linkedProduct;
 
     return ListTile(
-      contentPadding: EdgeInsets.zero,
+      contentPadding: EdgeInsetsDirectional.zero,
       leading: Icon(Icons.sell_outlined, color: c.primary),
       title: Text(
         linked?.title ?? context.l10n.linkAProduct,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: context.texts.labelMedium,
+        style: context.texts.label,
       ),
       subtitle: Text(
         linked == null
-            // Names the consequence, because the connection between this step
-            // and the Buy Now button is the entire point of the feature.
             ? context.l10n.linkAProductBody
             : context.l10n.linkedProductNote,
-        style: context.texts.bodySmall,
+        style: context.texts.caption,
       ),
       trailing: linked == null
           ? const DirectionalChevron()
           : IconButton(
-              icon: const Icon(Icons.close, size: 20),
+              icon: const Icon(Icons.close, size: WaveSpacing.x20),
               tooltip: context.l10n.removeTheLink,
               onPressed: () =>
                   context.read<UploadReelBloc>().add(const ProductLinked(null)),
@@ -383,13 +376,10 @@ class _UploadProgress extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Null fraction renders an indeterminate bar. Server-side transcoding
-        // has no measurable progress, and a fake bar is a lie the user
-        // eventually notices.
         LinearProgressIndicator(value: progress.fraction),
-        const SizedBox(height: 8),
+        const SizedBox(height: WaveSpacing.x8),
         Text(uploadStageLabel(context, progress.stage),
-            style: context.texts.bodySmall,),
+            style: context.texts.caption,),
       ],
     );
   }
@@ -409,21 +399,21 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsetsDirectional.all(WaveSpacing.x12),
       decoration: BoxDecoration(
         color: colour.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
         border: Border.all(color: colour.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: colour),
-          const SizedBox(width: 8),
+          Icon(icon, size: 18, color: colour), // FIXED
+          const SizedBox(width: WaveSpacing.x8),
           Expanded(
             child: Text(
               text,
-              style: context.texts.bodySmall?.copyWith(color: colour),
+              style: context.texts.caption.copyWith(color: colour),
             ),
           ),
         ],

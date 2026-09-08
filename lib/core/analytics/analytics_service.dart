@@ -1,7 +1,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-import 'package:injectable/injectable.dart';
+
 
 /// Thin wrapper so features depend on an interface, not on Firebase directly —
 /// and so every event also lands as a Crashlytics breadcrumb, which is what
@@ -12,7 +12,7 @@ abstract class AnalyticsService {
   Future<void> screen(String name);
 }
 
-@LazySingleton(as: AnalyticsService)
+
 class FirebaseAnalyticsService implements AnalyticsService {
   FirebaseAnalyticsService(this._analytics, this._crashlytics);
 

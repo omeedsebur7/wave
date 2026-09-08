@@ -1,4 +1,4 @@
-import 'package:injectable/injectable.dart';
+
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:wave/core/config/remote_config_keys.dart';
 import 'package:wave/core/services/remote_config_service.dart';
@@ -6,7 +6,7 @@ import 'package:wave/core/services/remote_config_service.dart';
 /// Force-update gate (§6). Remote Config holds the minimum supported build; a
 /// client below it gets a blocking screen instead of running against an API
 /// contract it no longer understands.
-@lazySingleton
+
 class ForceUpdateService {
   ForceUpdateService(this._rc);
 

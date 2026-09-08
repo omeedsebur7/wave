@@ -8,20 +8,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 import 'package:wave/features/location/data/osm_config.dart';
 import 'package:wave/features/location/domain/entities/delivery_location.dart';
 
 /// The buyer's pin, as the seller sees it.
-///
-/// Shown on the seller's order card, not just the buyer's. A delivery location
-/// that only the person who set it can see is a location that has not been
-/// delivered anywhere.
-///
-/// The preview is deliberately non-interactive. A seller scrolling a queue of
-/// orders should not have a map stealing every vertical drag that passes over
-/// it — tapping opens their real map app, which is where they were going to
-/// navigate from anyway.
 class DeliveryLocationCard extends StatelessWidget {
   const DeliveryLocationCard({required this.location, super.key});
 
@@ -33,14 +25,11 @@ class DeliveryLocationCard extends StatelessWidget {
     final pin = location;
 
     if (pin == null) {
-      // Says so plainly rather than hiding the section. An order with no pin
-      // needs a phone call, and a seller who does not know that will assume
-      // the app lost it.
       return Row(
         children: [
-          Icon(Icons.location_off_outlined, size: 16, color: c.textSecondary),
-          const SizedBox(width: 8),
-          Text(context.l10n.noLocationSet, style: context.texts.bodySmall),
+          Icon(Icons.location_off_outlined, size: WaveSpacing.x16, color: c.textSecondary),
+          const SizedBox(width: WaveSpacing.x8),
+          Text(context.l10n.noLocationSet, style: context.texts.caption),
         ],
       );
     }
@@ -48,13 +37,13 @@ class DeliveryLocationCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.deliveryLocation, style: context.texts.labelMedium),
-        const SizedBox(height: 8),
+        Text(context.l10n.deliveryLocation, style: context.texts.label),
+        const SizedBox(height: WaveSpacing.x8),
 
         ClipRRect(
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+          borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
           child: SizedBox(
-            height: 140,
+            height: WaveSpacing.x64 * 2 + WaveSpacing.x12, // ~140 equivalent using tokens
             child: Stack(
               children: [
                 WaveMap(
@@ -64,17 +53,13 @@ class DeliveryLocationCard extends StatelessWidget {
                   markers: [
                     Marker(
                       point: LatLng(pin.latitude, pin.longitude),
-                      width: 40,
-                      height: 40,
-                      // Anchored at the bottom so the point of the pin sits on
-                      // the coordinate rather than its centre.
+                      width: WaveSpacing.x40,
+                      height: WaveSpacing.x40,
                       alignment: Alignment.topCenter,
-                      child: Icon(Icons.location_on, size: 40, color: c.primary),
+                      child: Icon(Icons.location_on, size: WaveSpacing.x40, color: c.primary),
                     ),
                   ],
                 ),
-                // Catches taps before the map does, so the whole preview is one
-                // target rather than a surface that swallows gestures.
                 Positioned.fill(
                   child: Material(
                     color: Colors.transparent,
@@ -87,18 +72,15 @@ class DeliveryLocationCard extends StatelessWidget {
         ),
 
         if (pin.isTooVague) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: WaveSpacing.x8),
           Row(
             children: [
-              Icon(Icons.warning_amber_outlined, size: 16, color: c.warning),
-              const SizedBox(width: 6),
+              Icon(Icons.warning_amber_outlined, size: WaveSpacing.x16, color: c.warning),
+              const SizedBox(width: WaveSpacing.x8),
               Expanded(
                 child: Text(
-                  // A ±2km fix on a map looks as confident as a ±5m one. Saying
-                  // so is the difference between a courier phoning ahead and a
-                  // courier driving to the wrong street first.
                   context.l10n.approximateFix,
-                  style: context.texts.bodySmall?.copyWith(color: c.warning),
+                  style: context.texts.caption.copyWith(color: c.warning),
                 ),
               ),
             ],
@@ -106,36 +88,38 @@ class DeliveryLocationCard extends StatelessWidget {
         ],
 
         if (pin.note != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: WaveSpacing.x8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.push_pin_outlined, size: 16, color: c.textSecondary),
-              const SizedBox(width: 6),
+              Icon(Icons.push_pin_outlined, size: WaveSpacing.x16, color: c.textSecondary),
+              const SizedBox(width: WaveSpacing.x8),
               Expanded(
                 child: SelectableText(
                   pin.note!,
-                  style: context.texts.bodyMedium,
+                  style: context.texts.body,
                 ),
               ),
             ],
           ),
         ],
 
-        const SizedBox(height: 8),
+        const SizedBox(height: WaveSpacing.x8),
         Row(
           children: [
-            TextButton.icon(
+            WaveButton(
+              variant: WaveButtonVariant.tertiary,
+              size: WaveButtonSize.sm,
               onPressed: () => _openInMaps(context, pin),
-              icon: const Icon(Icons.map_outlined, size: 18),
-              label: Text(context.l10n.openInMaps),
+              icon: Icons.map_outlined,
+              label: context.l10n.openInMaps,
             ),
             const Spacer(),
-            IconButton(
-              // Copying the pair is the fallback when no map app is installed,
-              // and the thing a seller pastes into a courier's WhatsApp.
-              tooltip: context.l10n.copy,
-              icon: const Icon(Icons.copy, size: 18),
+            WaveButton(
+              variant: WaveButtonVariant.icon,
+              size: WaveButtonSize.sm,
+              icon: Icons.copy,
+              label: context.l10n.copy, // Semantic text
               onPressed: () async {
                 await Clipboard.setData(
                   ClipboardData(text: '${pin.rounded.lat},${pin.rounded.lng}'),
@@ -152,19 +136,10 @@ class DeliveryLocationCard extends StatelessWidget {
     );
   }
 
-  /// Hands off to whatever the seller already uses.
-  ///
-  /// Deliberately not an in-app navigator. Couriers here use Google Maps or
-  /// Waze with local traffic data and voice guidance in the right language;
-  /// rebuilding a worse version of that inside a marketplace app would be a
-  /// Phase 2 mistake, not a Phase 1 feature.
   Future<void> _openInMaps(BuildContext context, DeliveryLocation pin) async {
     final lat = pin.rounded.lat;
     final lng = pin.rounded.lng;
 
-    // `geo:` is the Android intent scheme and opens the user's default map app.
-    // iOS does not register it, so it falls through to a universal link — which
-    // Google Maps claims if installed and Apple Maps handles otherwise.
     final candidates = <Uri>[
       if (!kIsWeb && Platform.isAndroid) Uri.parse('geo:$lat,$lng?q=$lat,$lng'),
       Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng'),
@@ -175,8 +150,6 @@ class DeliveryLocationCard extends StatelessWidget {
     }
 
     if (!context.mounted) return;
-    // Every handoff failed, which on a device with no map app is possible.
-    // The coordinates go to the clipboard so the seller still has something.
     await Clipboard.setData(ClipboardData(text: '$lat,$lng'));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)

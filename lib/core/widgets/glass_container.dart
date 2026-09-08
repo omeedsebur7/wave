@@ -1,71 +1,49 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:wave/app/di/injector.dart';
+import 'package:wave/core/l10n_extension.dart';
+import 'package:wave/core/network/connectivity_service.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 
-enum GlassElevation { resting, raised, floating }
-
-/// The glassmorphism primitive (§3.4). Blur 20px, 12px fallback on low-end
-/// devices, white fill at 8–12% (light) / 4–6% (dark), 1px white border at
-/// ~19%.
-///
-/// `GlassElevation.floating` is the only tier that carries the accent glow, and
-/// it's rationed on purpose — FAB, active product card, 3D viewer. Everywhere
-/// else the glow stops reading as a signature and starts reading as noise.
-class GlassContainer extends StatelessWidget {
-  const GlassContainer({
-    required this.child,
-    this.elevation = GlassElevation.resting,
-    this.radius = WaveSurfaces.radiusCard,
-    this.padding = const EdgeInsets.all(16),
-    this.lowEndDevice = false,
-    this.onTap,
-    super.key,
-  });
-
-  final Widget child;
-  final GlassElevation elevation;
-  final double radius;
-  final EdgeInsets padding;
-
-  /// Set from a device-capability check at startup; drops blur 20 → 12.
-  final bool lowEndDevice;
-  final VoidCallback? onTap;
+class OfflineBanner extends StatelessWidget {
+  const OfflineBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final s = context.surfaces;
-    final sigma = lowEndDevice ? s.blurSigmaLowEnd : s.blurSigma;
-    final shadows = switch (elevation) {
-      GlassElevation.resting => s.resting,
-      GlassElevation.raised => s.raised,
-      GlassElevation.floating => s.floating,
-    };
+    final c = context.waveColors;
 
-    final borderRadius = BorderRadius.circular(radius);
+    return StreamBuilder<ConnectionQuality>(
+      stream: getIt<ConnectivityService>().onChanged,
+      builder: (context, snapshot) {
+        final quality = snapshot.data;
+        if (quality != ConnectionQuality.offline) {
+          return const SizedBox.shrink();
+        }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(borderRadius: borderRadius, boxShadow: shadows),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-          child: Material(
-            color: s.glassFill,
-            child: InkWell(
-              onTap: onTap,
-              child: Container(
-                padding: padding,
-                decoration: BoxDecoration(
-                  borderRadius: borderRadius,
-                  border: Border.all(color: s.glassBorder),
+        return Semantics(
+          liveRegion: true,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsetsDirectional.symmetric( // FIXED
+              horizontal: WaveSpacing.x16, 
+              vertical: WaveSpacing.x12, 
+            ),
+            color: c.warning.withValues(alpha: 0.15),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off, size: WaveSpacing.x16, color: c.warning), // FIXED
+                const SizedBox(width: WaveSpacing.x8), // FIXED
+                Expanded(
+                  child: Text(
+                    context.l10n.offlineBannerBody,
+                    style: context.texts.caption.copyWith(color: c.warning), // FIXED
+                  ),
                 ),
-                child: child,
-              ),
+              ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

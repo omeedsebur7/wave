@@ -267,8 +267,9 @@ class ReelControllerPool {
     }
   }
 
-  Future<void> resumeCurrent(String reelId) async {
-    final player = _players[reelId];
+  Future<void> resumeCurrent() async {
+    if (_currentReelId == null) return;
+    final player = _players[_currentReelId];
     if (player != null && player.isInitialized) await player.play();
   }
 

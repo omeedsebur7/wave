@@ -5,23 +5,11 @@ version: 1.0.0+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
-  flutter: ">=3.22.0"
+  flutter: ">=3.44.0"
 
-# NOTE: versions below are a starting point. Per §6 of the brief, confirm the
-# current published versions (especially video_player / chewie / firebase_*)
-# before locking dependencies. Run `flutter pub upgrade --major-versions`.
-#
-# Alphabetised (sort_pub_dependencies) rather than grouped under headers like
-# "# Firebase" / "# Auth providers" as before. A first attempt at preserving
-# those groupings as trailing comments introduced exactly the kind of
-# ordering mistake this fix exists to catch — bloc/flutter_bloc left out of
-# place, cloud_functions before cloud_firestore. Plain alphabetical order,
-# checked against Python's sorted() before this file was written rather than
-# eyeballed, is less to get wrong.
 dependencies:
   bloc: ^9.0.0
   cached_network_image: ^3.4.1
-  chewie: ^1.8.5
   cloud_firestore: ^5.4.3
   cloud_functions: ^5.1.3
   connectivity_plus: ^6.0.5
@@ -45,16 +33,13 @@ dependencies:
   flutter_map: ^7.0.2
   flutter_native_splash: any
   flutter_secure_storage: ^9.2.2
-  freezed_annotation: ^3.1.0
   geolocator: ^13.0.1
   get_it: ^8.0.0
   go_router: ^14.3.0
   google_sign_in: ^6.2.1
   http: ^1.2.2
   image_picker: ^1.1.2
-  injectable: ^3.0.0
   intl: ^0.20.2
-  json_annotation: ^4.12.0
   latlong2: ^0.9.1
   logger: ^2.4.0
   package_info_plus: ^8.0.2
@@ -69,25 +54,21 @@ dependencies:
   video_compress: ^3.1.3
   video_player: ^2.9.2
 
-  # P2 — intentionally NOT added yet (see §3.6):
-  # model_viewer_plus: for the live .glb/.gltf product viewer
-  # local_auth:        for biometric login
-
 dev_dependencies:
   bloc_test: ^10.0.0
   build_runner: ^2.15.1
+  custom_lint: any
   fake_cloud_firestore: ^3.0.3
   flutter_launcher_icons: ^0.14.1
   flutter_test:
     sdk: flutter
-  freezed: ^3.2.5
   golden_toolkit: ^0.15.0
-  injectable_generator: ^3.0.2
   integration_test:
     sdk: flutter
-  json_serializable: ^6.8.0
   mocktail: ^1.0.4
   very_good_analysis: ^6.0.0
+  wave_lints:
+    path: packages/wave_lints
 
 flutter:
   uses-material-design: true
@@ -96,11 +77,13 @@ flutter:
     - assets/brand/
     - assets/images/
   fonts:
-    - family: PlusJakartaSans
+    - family: NotoSansArabic
       fonts:
-        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+        - asset: assets/fonts/NotoSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansArabic-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+        - asset: assets/fonts/NotoSansArabic-Bold.ttf
           weight: 700
     - family: Inter
       fonts:
@@ -108,32 +91,16 @@ flutter:
           weight: 400
         - asset: assets/fonts/Inter-Medium.ttf
           weight: 500
-    - family: IBMPlexSansArabic
-      fonts:
-        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+        - asset: assets/fonts/Inter-SemiBold.ttf
           weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
-
-# ── App icon ─────────────────────────────────────────────────────────────────
-# Regenerate after changing any source image:
-#     dart run flutter_launcher_icons
-#
-# Three images rather than one, because each platform crops differently:
-#   icon.png            opaque, 78% occupancy — iOS rejects alpha in app icons
-#   icon_foreground.png transparent, 55%      — Android masks to a 66% circle
-#   background is flat black, which is the artwork's own ground
-#
-# The source art fills 84% of its frame. Shipping that straight to an adaptive
-# icon slices both ends off the W, which is why the derivatives exist.
 flutter_launcher_icons:
   image_path: "assets/brand/icon.png"
   android: true
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/brand/icon_foreground.png"
-  # Android 13+ themed icon. Monochrome, so the launcher can tint it to the
-  # user's wallpaper — the neon gradient is discarded here by design.
   adaptive_icon_monochrome: "assets/brand/icon_foreground.png"
   ios: true
   remove_alpha_ios: true
@@ -143,30 +110,17 @@ flutter_launcher_icons:
     background_color: "#000000"
     theme_color: "#000000"
 
-# ── Splash screen ────────────────────────────────────────────────────────────
-# Regenerate after changing any source image:
-#     dart run flutter_native_splash:create
-#
-# Black in both themes. The mark is a glow on black — on a light background it
-# loses the halo that makes it read, so there is no light variant.
 flutter_native_splash:
   color: "#000000"
   color_dark: "#000000"
   image: "assets/brand/splash.png"
   image_dark: "assets/brand/splash.png"
-
   android_12:
-    # Android 12+ draws the icon inside a 240dp circle and masks to 160dp, so
-    # this uses a separately padded source. Reusing splash.png here would clip
-    # the outer strokes.
     image: "assets/brand/splash_android12.png"
     image_dark: "assets/brand/splash_android12.png"
     color: "#000000"
     color_dark: "#000000"
-
   android: true
   ios: true
   web: false
-
-  # Legacy fullscreen splash on Android 11 and below.
   fullscreen: true

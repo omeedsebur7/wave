@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+
 import 'package:wave/core/widgets/trust_badge.dart';
 import 'package:wave/features/orders/domain/entities/order.dart';
 import 'package:wave/features/orders/presentation/widgets/order_tracker.dart';
@@ -106,7 +106,7 @@ void main() {
                         decoration: BoxDecoration(
                           color: c.surface,
                           borderRadius:
-                              BorderRadius.circular(WaveSurfaces.radiusChip),
+                              BorderRadius.circular(context.surfaces.radiusChip),
                           boxShadow: context.surfaces.resting,
                         ),
                       ),
@@ -117,7 +117,7 @@ void main() {
                         decoration: BoxDecoration(
                           color: c.surface,
                           borderRadius:
-                              BorderRadius.circular(WaveSurfaces.radiusCard),
+                              BorderRadius.circular(context.surfaces.radiusCard),
                           boxShadow: context.surfaces.raised,
                         ),
                       ),
@@ -131,7 +131,7 @@ void main() {
                         decoration: BoxDecoration(
                           color: c.surface,
                           borderRadius:
-                              BorderRadius.circular(WaveSurfaces.radiusSheet),
+                              BorderRadius.circular(context.surfaces.radiusSheet),
                           boxShadow: context.surfaces.floating,
                         ),
                       ),
@@ -193,7 +193,7 @@ class _Swatch extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: colour,
-            borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+            borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
           ),
         ),
         const SizedBox(height: 4),

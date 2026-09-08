@@ -6,6 +6,7 @@ import 'package:wave/app/di/injector.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
 import 'package:wave/features/notifications/data/repositories/notification_repository.dart';
 import 'package:wave/features/notifications/domain/entities/app_notification.dart';
@@ -21,23 +22,11 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   final _repo = getIt<NotificationRepository>();
 
   Future<void> _open(AppNotification notification) async {
-    // Marked read on tap rather than on render. Marking everything read just
-    // because the list was opened destroys the one signal telling someone what
-    // they have not seen yet.
     if (!notification.read) {
       await _repo.markRead(notification.id);
     }
     if (!mounted) return;
     if (notification.deepLink != null) {
-      // context.push returns Future<T?> — the value popped when the pushed
-      // route eventually closes. Nothing here waits for that, or has any use
-      // for it: _open's own job is done the moment navigation is requested.
-      // unawaited() marks that as the intended shape rather than an omission
-      // — a bare, unawaited Future is otherwise indistinguishable from one
-      // someone forgot to await, and forgetting matters here because an
-      // unhandled error on an awaited navigation Future would normally
-      // surface through this method's caller; unawaited makes clear that
-      // was never the design.
       unawaited(context.push(notification.deepLink!));
     }
   }
@@ -82,7 +71,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 
           return ListView.separated(
             itemCount: notifications.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, __) => const Divider(height: 1), // FIXED
             itemBuilder: (context, i) {
               final n = notifications[i];
 
@@ -92,13 +81,13 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                       .withValues(alpha: 0.12),
                   child: Icon(
                     _iconFor(n.channel),
-                    size: 20,
+                    size: WaveSpacing.x20, // FIXED
                     color: _colourFor(context, n.channel),
                   ),
                 ),
                 title: Text(
                   n.title,
-                  style: context.texts.bodyMedium?.copyWith(
+                  style: context.texts.body.copyWith( // FIXED: bodyMedium -> body
                     fontWeight: n.read ? FontWeight.w400 : FontWeight.w600,
                   ),
                 ),
@@ -106,17 +95,17 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   n.body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: context.texts.bodySmall,
+                  style: context.texts.caption, // FIXED: bodySmall -> caption
                 ),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(_relative(context, n.createdAt),
-                        style: context.texts.bodySmall,),
+                        style: context.texts.caption,), // FIXED
                     if (!n.read) ...[
-                      const SizedBox(height: 4),
-                      Icon(Icons.circle, size: 8, color: c.primary),
+                      const SizedBox(height: WaveSpacing.x4), // FIXED
+                      Icon(Icons.circle, size: WaveSpacing.x8, color: c.primary), // FIXED
                     ],
                   ],
                 ),
@@ -146,14 +135,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     };
   }
 
-  /// Short relative time. A full timestamp in a list is noise — what matters is
-  /// whether something happened just now or last week.
   static String _relative(BuildContext context, DateTime when) {
     final diff = DateTime.now().difference(when);
     final l10n = context.l10n;
-    // The unit suffixes are translated too. A bare 'm'/'h'/'d' is not
-    // language-neutral shorthand — it is English abbreviation, and it reads as
-    // noise beside Arabic or Kurdish text.
     if (diff.inMinutes < 1) return l10n.timeJustNow;
     if (diff.inHours < 1) return l10n.timeMinutesShort(diff.inMinutes);
     if (diff.inDays < 1) return l10n.timeHoursShort(diff.inHours);

@@ -1,0 +1,8 @@
+bool _isExempt(String path) {
+  final p = path.replaceAll(r'\', '/');
+  return p.contains('/lib/core/theme/') ||
+      p.contains('/lib/design_system/tokens/') ||
+      p.contains('/lib/l10n/') ||
+      p.endsWith('.g.dart') ||
+      p.endsWith('.freezed.dart');
+}

@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/utils/result.dart';
 import 'package:wave/features/reels/data/datasources/reel_remote_data_source.dart';
 import 'package:wave/features/reels/domain/entities/reel.dart';
 import 'package:wave/features/reels/domain/repositories/reel_repository.dart';
 
-@LazySingleton(as: ReelRepository)
+
 class ReelRepositoryImpl implements ReelRepository {
   ReelRepositoryImpl(this._remote, this._auth);
 

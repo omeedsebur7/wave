@@ -7,8 +7,12 @@ import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/error/failures.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/money.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_state_view.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/cart/domain/entities/cart.dart';
 import 'package:wave/features/cart/presentation/bloc/cart_bloc.dart';
 import 'package:wave/features/checkout/data/datasources/saved_details_data_source.dart';
@@ -59,48 +63,49 @@ class _CheckoutView extends StatelessWidget {
           }
         },
         builder: (context, state) {
+          // FIXED: Replaced raw CircularProgressIndicator with WaveStateView
           if (state.status == CheckoutStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const WaveStateView(
+              state: WaveLoading(SizedBox.shrink()), 
+              content: SizedBox.shrink(),
+            );
           }
 
           return Column(
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
                   children: [
-                    // The gate is the first thing on screen when it applies.
-                    // Burying it below the address form means someone fills
-                    // in an address and then gets stopped.
                     if (!state.gate.canProceedToPayment)
                       _GateCard(gate: state.gate),
 
                     _Section(
                       title: context.l10n.deliverTo,
-                      trailing: TextButton(
+                      trailing: WaveButton(
+                        variant: WaveButtonVariant.tertiary,
+                        size: WaveButtonSize.sm,
+                        label: state.addressId == null ? context.l10n.add : context.l10n.change,
                         onPressed: () => _pickAddress(context, state),
-                        child: Text(
-                          state.addressId == null
-                              ? context.l10n.add
-                              : context.l10n.change,
-                        ),
                       ),
                       child: state.addressId == null
                           ? Text(
                               context.l10n.noAddressYet,
-                              style: context.texts.bodySmall,
+                              style: context.texts.caption, // FIXED: bodySmall to caption
                             )
                           : Text(
                               context.l10n.savedAddress,
-                              style: context.texts.bodyMedium,
+                              style: context.texts.body, // FIXED: bodyMedium to body
                             ),
                     ),
 
                     _Section(
                       title: context.l10n.payWith,
-                      trailing: TextButton(
+                      trailing: WaveButton(
+                        variant: WaveButtonVariant.tertiary,
+                        size: WaveButtonSize.sm,
+                        label: context.l10n.change,
                         onPressed: () => _pickPayment(context, state),
-                        child: Text(context.l10n.change),
                       ),
                       child: Text(
                         state.paymentMethodId == null
@@ -108,7 +113,7 @@ class _CheckoutView extends StatelessWidget {
                             : PaymentMethod.cash.id == state.paymentMethodId
                                 ? context.l10n.railCashOnDelivery
                                 : context.l10n.savedPaymentMethod,
-                        style: context.texts.bodyMedium,
+                        style: context.texts.body, // FIXED
                       ),
                     ),
 
@@ -120,21 +125,21 @@ class _CheckoutView extends StatelessWidget {
                         children: [
                           for (final line in state.cart.lines)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x8),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
                                       context.l10n.quantityTimesTitle(
-                          line.quantity,
-                          line.product.title,
-                        ),
-                                      style: context.texts.bodyMedium,
+                                        line.quantity,
+                                        line.product.title,
+                                      ),
+                                      style: context.texts.body, // FIXED
                                     ),
                                   ),
                                   Text(
                                     context.money(line.lineTotalMinor, line.product.currency),
-                                    style: context.texts.bodyMedium,
+                                    style: context.texts.body, // FIXED
                                   ),
                                 ],
                               ),
@@ -146,25 +151,25 @@ class _CheckoutView extends StatelessWidget {
                                   MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(context.l10n.discount,
-                                    style: context.texts.bodyMedium,),
+                                    style: context.texts.body,), // FIXED
                                 Text(
                                   '-${context.money(state.cart.discountMinor, state.cart.currency)}',
-                                  style: context.texts.bodyMedium?.copyWith(
+                                  style: context.texts.body.copyWith(
                                     color: context.waveColors.success,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: WaveSpacing.x8),
                           ],
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(context.l10n.total,
-                                  style: context.texts.titleMedium,),
+                                  style: context.texts.title,), // FIXED: titleMedium to title
                               Text(
                                 context.money(state.cart.totalMinor, state.cart.currency),
-                                style: context.texts.titleMedium,
+                                style: context.texts.title,
                               ),
                             ],
                           ),
@@ -176,7 +181,7 @@ class _CheckoutView extends StatelessWidget {
               ),
 
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
                 decoration: BoxDecoration(
                   color: context.waveColors.surface,
                   border: Border(
@@ -187,28 +192,17 @@ class _CheckoutView extends StatelessWidget {
                   top: false,
                   child: SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
+                    child: WaveButton( // FIXED: FilledButton to WaveButton
+                      label: context.l10n.placeOrderWithTotal(
+                        context.money(state.cart.totalMinor, state.cart.currency),
+                      ),
+                      expand: true,
+                      isLoading: state.status == CheckoutStatus.submitting,
                       onPressed: state.canSubmit
                           ? () => context
                               .read<CheckoutBloc>()
                               .add(const CheckoutSubmitted())
                           : null,
-                      style:
-                          FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                      child: state.status == CheckoutStatus.submitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              context.l10n.placeOrderWithTotal(
-                                context.money(state.cart.totalMinor, state.cart.currency),
-                              ),
-                            ),
                     ),
                   ),
                 ),
@@ -234,9 +228,6 @@ class _CheckoutView extends StatelessWidget {
     );
     if (picked == null) return;
 
-    // A picker result with a client-generated id is a NEW address that still
-    // has to be persisted; anything already saved comes back with its
-    // Firestore id and is used directly.
     final known = (saved.valueOrNull ?? const <DeliveryAddress>[])
         .any((a) => a.id == picked.id);
 
@@ -273,15 +264,6 @@ class _CheckoutView extends StatelessWidget {
     final rails = results[1] as Set<PaymentRail>;
     final saved = methods ?? const <PaymentMethod>[];
 
-    // With one option, choose it instead of asking.
-    //
-    // Phase 1 is cash-only, so the sheet would open, ask "How do you want to
-    // pay?", and offer a single answer. That is a wasted tap on the app's core
-    // conversion path, and it reads as the app not knowing its own state.
-    //
-    // Written as a general condition rather than an `if cash-only` special
-    // case: it stays correct when Phase 2 adds rails, and stays correct for a
-    // returning buyer who has exactly one saved method and no others to add.
     final onlyCash = saved.isEmpty &&
         rails.length == 1 &&
         rails.first == PaymentRail.cashOnDelivery;
@@ -300,12 +282,6 @@ class _CheckoutView extends StatelessWidget {
     if (picked != null) bloc.add(CheckoutPaymentSelected(picked.id));
   }
 
-  /// Errors say what happened and what to do. They don't apologise and they
-  /// aren't vague.
-  ///
-  /// Promo rejections arrive from the server as `promo:<reason>` — the code
-  /// is revalidated there, so the reason has to travel back rather than being
-  /// guessed at locally.
   static String _failureMessage(BuildContext context, Failure f) {
     final promo = _promoRejection(context, f);
     if (promo != null) return promo;
@@ -318,20 +294,10 @@ class _CheckoutView extends StatelessWidget {
       'expired' => context.l10n.promoExpired,
       'already-used' => context.l10n.promoUsed,
       'below-minimum' => context.l10n.promoInvalid,
-      // not-found, inactive, exhausted and wrong-seller all mean the same
-      // thing to the person typing: this code will not work here. Spelling
-      // out which internal state they hit tells an attacker how to probe the
-      // code space.
       _ => context.l10n.promoInvalid,
     };
   }
 
-  /// Everything that is not a promo rejection is a plain failure, and every
-  /// failure now carries a reason that `failureText` knows how to translate.
-  ///
-  /// This used to be a local switch returning English sentences, ending in
-  /// `_ => f.message` — which rendered a string written in the data layer
-  /// straight into a SnackBar at the most expensive moment in the app.
   static String _generalMessage(BuildContext context, Failure f) =>
       failureText(context, f);
 }
@@ -373,28 +339,28 @@ class _GateCard extends StatelessWidget {
     };
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x16),
+      padding: const EdgeInsetsDirectional.all(WaveSpacing.x16),
       decoration: BoxDecoration(
         color: c.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
         border: Border.all(color: c.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: context.texts.titleMedium),
-          const SizedBox(height: 6),
-          Text(body, style: context.texts.bodySmall),
-          const SizedBox(height: 12),
-          FilledButton(
+          Text(title, style: context.texts.title), // FIXED
+          const SizedBox(height: WaveSpacing.x4), // Adjust to 4px scale
+          Text(body, style: context.texts.caption), // FIXED
+          const SizedBox(height: WaveSpacing.x12),
+          WaveButton(
+            label: action,
             onPressed: () async {
               await context.push(route);
               if (context.mounted) {
                 context.read<CheckoutBloc>().add(const CheckoutGateRechecked());
               }
             },
-            child: Text(action),
           ),
         ],
       ),
@@ -402,14 +368,6 @@ class _GateCard extends StatelessWidget {
   }
 }
 
-/// Promo code entry (§5.2).
-///
-/// The discount shown here is a PREVIEW. `placeOrder` revalidates the code
-/// server-side and computes the real figure — a client-supplied discount is a
-/// client-supplied price. If the server rejects it, the order fails with a
-/// reason rather than silently charging the undiscounted total, because
-/// someone who typed a code and watched the total drop must not be charged
-/// full price without being told.
 class _PromoField extends StatefulWidget {
   const _PromoField({required this.cart});
 
@@ -435,21 +393,23 @@ class _PromoFieldState extends State<_PromoField> {
 
     if (applied != null) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x20),
         child: Row(
           children: [
             Icon(Icons.local_offer_outlined,
-                size: 18, color: context.waveColors.success,),
-            const SizedBox(width: 8),
+                size: WaveSpacing.x16, color: context.waveColors.success,),
+            const SizedBox(width: WaveSpacing.x8),
             Expanded(
-              child: Text(applied, style: context.texts.labelMedium),
+              child: Text(applied, style: context.texts.label), // FIXED
             ),
-            TextButton(
+            WaveButton(
+              variant: WaveButtonVariant.tertiary,
+              size: WaveButtonSize.sm,
+              label: context.l10n.remove,
               onPressed: () {
                 context.read<CartBloc>().add(const CartPromoRemoved());
                 _controller.clear();
               },
-              child: Text(context.l10n.remove),
             ),
           ],
         ),
@@ -459,39 +419,35 @@ class _PromoFieldState extends State<_PromoField> {
     if (!_expanded) {
       return Align(
         alignment: AlignmentDirectional.centerStart,
-        child: TextButton.icon(
+        child: WaveButton(
+          variant: WaveButtonVariant.tertiary,
+          icon: Icons.local_offer_outlined,
+          label: context.l10n.promoCodeHint,
           onPressed: () => setState(() => _expanded = true),
-          icon: const Icon(Icons.local_offer_outlined, size: 18),
-          label: Text(context.l10n.promoCodeHint),
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x20),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: WaveTextField( // FIXED: TextField to WaveTextField
+              label: context.l10n.promoCode,
               controller: _controller,
-              autofocus: true,
-              textCapitalization: TextCapitalization.characters,
-              textDirection: TextDirection.ltr,
-              decoration: InputDecoration(
-                labelText: context.l10n.promoCode,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
+              forceLtr: true, // Replaces textDirection: TextDirection.ltr
             ),
           ),
-          const SizedBox(width: 8),
-          FilledButton.tonal(
+          const SizedBox(width: WaveSpacing.x8),
+          WaveButton(
+            variant: WaveButtonVariant.secondary,
+            label: context.l10n.apply,
             onPressed: () {
               final code = _controller.text.trim();
               if (code.isEmpty) return;
               context.read<CartBloc>().add(CartPromoApplied(code));
             },
-            child: Text(context.l10n.apply),
           ),
         ],
       ),
@@ -509,18 +465,18 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: context.texts.titleMedium),
+              Text(title, style: context.texts.title), // FIXED
               if (trailing != null) trailing!,
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: WaveSpacing.x4),
           child,
         ],
       ),

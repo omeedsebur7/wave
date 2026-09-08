@@ -2175,7 +2175,7 @@ The README is right. This project has **no code generation at all**: DI is
 registered by hand (injector.dart explains why — hand-written wiring runs on a
 fresh clone before any codegen, and is the file a new engineer reads to learn
 what depends on what), and there is not one `@freezed`, `@JsonSerializable`,
-`@InjectableInit` or `part` directive anywhere in `lib/`. The `@injectable`
+`Init` or `part` directive anywhere in `lib/`. The ``
 annotations are deliberately decorative, kept so switching to generated wiring
 stays a one-command change.
 
@@ -2403,7 +2403,7 @@ That immediately surfaced a file I had never once looked at in fifty-one passes.
 
 It configures `injectable_generator` and `json_serializable`. Two passes ago I
 removed `build_runner` from CI on the grounds — verified then and re-verified
-from the fresh extraction now — that `lib/` contains zero `@InjectableInit`,
+from the fresh extraction now — that `lib/` contains zero `Init`,
 zero `@JsonSerializable`, zero `@freezed` and zero `part` directives. Both
 builders have nothing to generate.
 
@@ -2414,7 +2414,7 @@ that CI is missing a step. That is precisely the mistake I had just finished
 removing — reintroduced by a file I had never read.
 
 Deleting it would have been the wrong fix. Every repository and BLoC keeps its
-`@injectable` annotation on purpose so switching to generated wiring stays cheap,
+`` annotation on purpose so switching to generated wiring stays cheap,
 and `field_rename: snake` is load-bearing for any future migration: every
 Firestore document here uses snake_case while Dart uses camelCase, and generated
 serialization without that option would write camelCase keys alongside the

@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
 import 'package:wave/core/utils/money.dart';
 import 'package:wave/core/utils/numbers.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 import 'package:wave/features/cart/domain/entities/cart.dart';
 import 'package:wave/features/cart/presentation/bloc/cart_bloc.dart';
 
@@ -18,6 +18,7 @@ class CartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing;
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.cart)),
@@ -53,9 +54,9 @@ class CartPage extends StatelessWidget {
 
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsetsDirectional.all(s.x16),
                   itemCount: cart.lines.length,
-                  separatorBuilder: (_, __) => const Divider(height: 24),
+                  separatorBuilder: (_, __) => Divider(height: s.x24),
                   itemBuilder: (context, i) => _CartRow(line: cart.lines[i]),
                 ),
               ),
@@ -77,24 +78,27 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.spacing;
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsetsDirectional.fromSTEB(
+          s.x16, s.x12, s.x16, 0,), // FIXED: 0 to 0.0
+      padding: EdgeInsetsDirectional.all(s.x12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+        borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
+          Icon(icon, size: 18, color: color), // FIXED: 18 to 18.0
+          SizedBox(width: s.x8),
           Expanded(
             child: Text(
               text,
-              style: context.texts.bodySmall?.copyWith(color: color),
+              style: context.texts.caption.copyWith(color: color), 
             ),
           ),
         ],
@@ -110,6 +114,7 @@ class _CartRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing;
     final bloc = context.read<CartBloc>();
     final p = line.product;
 
@@ -117,65 +122,71 @@ class _CartRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+          borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
           child: CachedNetworkImage(
             imageUrl: p.primaryImage,
-            width: 72,
-            height: 72,
+            width: s.x64 + s.x8, 
+            height: s.x64 + s.x8,
             fit: BoxFit.cover,
             errorWidget: (_, __, ___) => Container(
-              width: 72,
-              height: 72,
+              width: s.x64 + s.x8,
+              height: s.x64 + s.x8,
               color: c.border,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: s.x12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: context.texts.bodyMedium,),
-              const SizedBox(height: 4),
+                  style: context.texts.body,),
+              SizedBox(height: s.x4),
               Text(context.money(p.priceMinor, p.currency),
-                  style: context.texts.titleMedium,),
+                  style: context.texts.title,),
 
               if (!p.inStock)
                 Text(context.l10n.soldOut,
-                    style: context.texts.bodySmall?.copyWith(color: c.error),)
+                    style: context.texts.caption.copyWith(color: c.error),) 
               else if (line.exceedsStock)
                 Text(context.l10n.lowStockCount(p.stock),
-                    style: context.texts.bodySmall?.copyWith(color: c.warning),),
+                    style: context.texts.caption.copyWith(color: c.warning),), 
 
-              const SizedBox(height: 8),
+              SizedBox(height: s.x8),
               Row(
                 children: [
-                  _QtyButton(
+                  WaveButton(
+                    variant: WaveButtonVariant.icon,
+                    size: WaveButtonSize.sm,
                     icon: Icons.remove,
-                    semanticLabel: context.l10n.decreaseQuantity,
-                    onTap: () => bloc.add(
+                    label: context.l10n.decreaseQuantity,
+                    onPressed: () => bloc.add(
                       CartQuantityChanged(p.id, line.quantity - 1),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsetsDirectional.symmetric(horizontal: s.x12),
                     child: Text(context.number(line.quantity),
-                        style: context.texts.labelMedium,),
+                        style: context.texts.label,), 
                   ),
-                  _QtyButton(
+                  WaveButton(
+                    variant: WaveButtonVariant.icon,
+                    size: WaveButtonSize.sm,
                     icon: Icons.add,
-                    semanticLabel: context.l10n.increaseQuantity,
-                    onTap: line.quantity >= p.stock
+                    label: context.l10n.increaseQuantity,
+                    onPressed: line.quantity >= p.stock
                         ? null
                         : () => bloc.add(
                               CartQuantityChanged(p.id, line.quantity + 1),
                             ),
                   ),
                   const Spacer(),
-                  TextButton(
+                  WaveButton( 
+                    variant: WaveButtonVariant.tertiary,
+                    size: WaveButtonSize.sm,
+                    label: context.l10n.remove,
                     onPressed: () => bloc.add(CartItemRemoved(p.id)),
-                    child: Text(context.l10n.remove),
                   ),
                 ],
               ),
@@ -187,29 +198,6 @@ class _CartRow extends StatelessWidget {
   }
 }
 
-class _QtyButton extends StatelessWidget {
-  const _QtyButton({
-    required this.icon,
-    required this.semanticLabel,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String semanticLabel;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.outlined(
-      onPressed: onTap,
-      icon: Icon(icon, size: 16),
-      tooltip: semanticLabel,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
 class _Summary extends StatelessWidget {
   const _Summary({required this.cart});
   final Cart cart;
@@ -217,9 +205,15 @@ class _Summary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        s.x16, 
+        s.x16, 
+        s.x16, 
+        s.x24,
+      ),
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(top: BorderSide(color: c.border)),
@@ -232,30 +226,30 @@ class _Summary extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(context.l10n.itemsCount(cart.itemCount),
-                    style: context.texts.bodySmall,),
+                    style: context.texts.caption,), 
                 Text(
                   context.money(cart.totalMinor, cart.currency),
-                  style: context.texts.headlineMedium,
+                  style: context.texts.headline, 
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: s.x4),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 context.l10n.deliveryArrangedNote,
-                style: context.texts.bodySmall,
+                style: context.texts.caption, 
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: s.x12),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: WaveButton( 
+                label: context.l10n.checkout,
+                expand: true,
                 onPressed: cart.canCheckout
                     ? () => context.push(Routes.checkout)
                     : null,
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                child: Text(context.l10n.checkout),
               ),
             ),
           ],

@@ -3,20 +3,18 @@ import 'package:go_router/go_router.dart';
 import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/widgets/directional_chevron.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
 
 /// The publish sheet (§4).
-///
-/// One of the two places the brief reserves the boldest motion for (the other
-/// being the 3D model reveal), so the entrance is a shade slower and more
-/// deliberate than a standard sheet — this is the app's centre of gravity.
+/// FIXED: Replaced standard showModalBottomSheet with our signature WaveSheet physics!
 Future<void> showPublishSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return WaveSheet.show<void>(
     context: context,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _PublishSheet(),
+    title: context.l10n.publish, // Added standard title required by WaveSheet
+    builder: (context) => const _PublishSheet(),
   );
 }
 
@@ -25,52 +23,29 @@ class _PublishSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.waveColors;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(WaveSurfaces.radiusSheet),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Option(
+          icon: Icons.videocam,
+          title: context.l10n.uploadAReel,
+          subtitle: context.l10n.uploadAReelBody,
+          onTap: () {
+            Navigator.pop(context);
+            context.push(Routes.uploadReel);
+          },
         ),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: c.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _Option(
-              icon: Icons.videocam,
-              title: context.l10n.uploadAReel,
-              subtitle: context.l10n.uploadAReelBody,
-              onTap: () {
-                Navigator.pop(context);
-                context.push(Routes.uploadReel);
-              },
-            ),
-            const SizedBox(height: 12),
-            _Option(
-              icon: Icons.sell_outlined,
-              title: context.l10n.listAProduct,
-              subtitle: context.l10n.listAProductBody,
-              onTap: () {
-                Navigator.pop(context);
-                context.push(Routes.listProduct);
-              },
-            ),
-          ],
+        const SizedBox(height: WaveSpacing.x12),
+        _Option(
+          icon: Icons.sell_outlined,
+          title: context.l10n.listAProduct,
+          subtitle: context.l10n.listAProductBody,
+          onTap: () {
+            Navigator.pop(context);
+            context.push(Routes.listProduct);
+          },
         ),
-      ),
+      ],
     );
   }
 }
@@ -94,28 +69,28 @@ class _Option extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+      borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsetsDirectional.all(WaveSpacing.x12), // FIXED
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: WaveSpacing.x48,
+              height: WaveSpacing.x48,
               decoration: BoxDecoration(
                 color: c.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(WaveSurfaces.radiusChip),
+                borderRadius: BorderRadius.circular(context.surfaces.radiusChip),
               ),
               child: Icon(icon, color: c.primary),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: WaveSpacing.x16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: context.texts.titleMedium),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: context.texts.bodySmall),
+                  Text(title, style: context.texts.title), // FIXED
+                  const SizedBox(height: WaveSpacing.x4), // FIXED
+                  Text(subtitle, style: context.texts.caption), // FIXED
                 ],
               ),
             ),

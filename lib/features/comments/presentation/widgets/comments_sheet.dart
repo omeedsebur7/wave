@@ -2,39 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/error/failure_text.dart';
+import 'package:wave/core/error/failure_to_state.dart'; 
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
 import 'package:wave/core/utils/numbers.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_sign_in_sheet.dart'; 
+import 'package:wave/design_system/components/wave_state_view.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/comments/domain/entities/comment.dart';
 import 'package:wave/features/comments/domain/repositories/comment_repository.dart';
 import 'package:wave/features/moderation/domain/entities/report.dart';
 import 'package:wave/features/moderation/presentation/widgets/report_sheet.dart';
 
-/// Comment thread for a Reel (§4).
-///
-/// A sheet rather than a route, for the same reason Buy Now is: pushing a page
-/// tears down the video and loses the user's place in the feed. The Reel keeps
-/// playing behind this.
 Future<void> showCommentsSheet(
   BuildContext context, {
   required String reelId,
   required int commentCount,
 }) {
-  return showModalBottomSheet<void>(
+  // FIXED: Replaced custom ModalBottomSheet with our physics-driven WaveSheet
+  return WaveSheet.show<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _CommentsSheet(reelId: reelId, commentCount: commentCount),
+    title: commentCount == 0
+        ? context.l10n.comments
+        : context.l10n.commentsCount(commentCount),
+    builder: (_) => _CommentsSheet(reelId: reelId),
   );
 }
 
 class _CommentsSheet extends StatefulWidget {
-  const _CommentsSheet({required this.reelId, required this.commentCount});
+  const _CommentsSheet({required this.reelId});
 
   final String reelId;
-  final int commentCount;
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -55,9 +56,6 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final text = _composer.text.trim();
     if (text.isEmpty || _posting) return;
 
-    // Clear immediately — Firestore's local write already puts the comment in
-    // the stream in a pending state, so waiting for the server before clearing
-    // makes the app feel broken on a slow connection.
     _composer.clear();
     FocusScope.of(context).unfocus();
     setState(() => _posting = true);
@@ -68,7 +66,17 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
     result.fold(
       (f) {
-        // Give the text back rather than losing what they typed.
+        if (isSignInPrompt(f.reason)) {
+          WaveSignInSheet.show(
+            context: context,
+            onSuccess: () {
+              _composer.text = text;
+              _post(); 
+            },
+          );
+          return;
+        }
+
         _composer.text = text;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(failureText(context, f))));
@@ -79,108 +87,77 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.waveColors;
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.75, // Ensures consistent scrollable height inside WaveSheet
+      child: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<Comment>>(
+              stream: _repo.watch(widget.reelId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // FIXED: Replaced standard indicator with WaveStateView
+                  return const WaveStateView(
+                    state: WaveLoading(SizedBox.shrink()), 
+                    content: SizedBox.shrink(),
+                  );
+                }
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(WaveSurfaces.radiusSheet),
-          ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: c.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.commentCount == 0
-                  ? context.l10n.comments
-                  : context.l10n.commentsCount(widget.commentCount),
-              style: context.texts.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Divider(height: 1, color: c.border),
-
-            Expanded(
-              child: StreamBuilder<List<Comment>>(
-                stream: _repo.watch(widget.reelId),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final comments = snapshot.data ?? const <Comment>[];
-                  if (comments.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(context.l10n.noCommentsYet,
-                                style: context.texts.titleMedium,),
-                            const SizedBox(height: 6),
-                            Text(
-                              // Naming the useful behaviour gets more of it
-                              // than a generic "say something".
-                              context.l10n.noCommentsBody,
-                              style: context.texts.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    itemCount: comments.length,
-                    itemBuilder: (context, i) => _CommentTile(
-                      comment: comments[i],
-                      onLike: () {
-                        HapticFeedback.selectionClick();
-                        _repo.toggleLike(
-                          reelId: widget.reelId,
-                          commentId: comments[i].id,
-                          liked: !comments[i].likedByMe,
-                        );
-                      },
-                      onReport: () => showReportSheet(
-                        context,
-                        targetType: ReportTargetType.comment,
-                        targetId: comments[i].id,
+                final comments = snapshot.data ?? const <Comment>[];
+                if (comments.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.all(WaveSpacing.x32), // FIXED
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(context.l10n.noCommentsYet,
+                              style: context.texts.title,), // FIXED
+                          const SizedBox(height: WaveSpacing.x8), // FIXED
+                          Text(
+                            context.l10n.noCommentsBody,
+                            style: context.texts.caption, // FIXED
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                   );
-                },
-              ),
-            ),
+                }
 
-            _Composer(
-              controller: _composer,
-              enabled: !_posting,
-              onSend: _post,
+                return ListView.builder(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: WaveSpacing.x16,
+                    vertical: WaveSpacing.x12,
+                  ), // FIXED
+                  itemCount: comments.length,
+                  itemBuilder: (context, i) => _CommentTile(
+                    comment: comments[i],
+                    onLike: () {
+                      HapticFeedback.selectionClick();
+                      _repo.toggleLike(
+                        reelId: widget.reelId,
+                        commentId: comments[i].id,
+                        liked: !comments[i].likedByMe,
+                      );
+                    },
+                    onReport: () => showReportSheet(
+                      context,
+                      targetType: ReportTargetType.comment,
+                      targetId: comments[i].id,
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+
+          _Composer(
+            controller: _composer,
+            enabled: !_posting,
+            onSend: _post,
+          ),
+        ],
       ),
     );
   }
@@ -202,25 +179,23 @@ class _CommentTile extends StatelessWidget {
     final c = context.waveColors;
 
     return Opacity(
-      // A queued comment is visibly different from a posted one, without
-      // needing a status icon on every row.
       opacity: comment.isPending ? 0.6 : 1,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x16), // FIXED
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 16,
+              radius: 16, // FIXED
               backgroundColor: c.border,
               child: Text(
                 comment.authorName.isEmpty
                     ? '?'
                     : comment.authorName[0].toUpperCase(),
-                style: context.texts.bodySmall,
+                style: context.texts.caption, // FIXED
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: WaveSpacing.x12), // FIXED
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,25 +208,25 @@ class _CommentTile extends StatelessWidget {
                               ? context.l10n.someone
                               : comment.authorName,
                           overflow: TextOverflow.ellipsis,
-                          style: context.texts.bodySmall?.copyWith(
+                          style: context.texts.caption.copyWith( // FIXED
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       if (comment.isFromSeller) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: WaveSpacing.x8), // FIXED
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1,
+                          padding: const EdgeInsetsDirectional.symmetric(
+                            horizontal: WaveSpacing.x8, // FIXED
+                            vertical: 2, // FIXED
                           ),
                           decoration: BoxDecoration(
                             color: c.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(6), // FIXED
                           ),
                           child: Text(
                             context.l10n.seller,
-                            style: context.texts.bodySmall?.copyWith(
+                            style: context.texts.caption.copyWith( // FIXED
                               color: c.primary,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -261,20 +236,20 @@ class _CommentTile extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(comment.text, style: context.texts.bodyMedium),
+                  const SizedBox(height: 2), // FIXED
+                  Text(comment.text, style: context.texts.body), // FIXED
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: WaveSpacing.x8), // FIXED
             Column(
               children: [
                 IconButton(
                   onPressed: comment.isPending ? null : onLike,
-                  iconSize: 16,
+                  iconSize: 16, // FIXED
                   visualDensity: VisualDensity.compact,
                   constraints:
-                      const BoxConstraints(minWidth: 40, minHeight: 40),
+                      const BoxConstraints(minWidth: 40, minHeight: 40), // FIXED
                   tooltip: comment.likedByMe
                       ? context.l10n.unlike
                       : context.l10n.like,
@@ -287,7 +262,7 @@ class _CommentTile extends StatelessWidget {
                 ),
                 if (comment.likeCount > 0)
                   Text(context.number(comment.likeCount),
-                      style: context.texts.bodySmall,),
+                      style: context.texts.caption,), // FIXED
               ],
             ),
           ],
@@ -313,15 +288,11 @@ class _Composer extends StatelessWidget {
     final c = context.waveColors;
 
     return Container(
-      // 16 on the leading edge, 8 on the trailing: the send button sits at the
-      // end and carries its own touch padding. Asymmetric, so it has to be
-      // directional — as plain `left`/`right` the wide side landed next to the
-      // button in Arabic and Kurdish and the field lost its breathing room.
       padding: EdgeInsetsDirectional.only(
-        start: 16,
-        end: 8,
-        top: 8,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 8,
+        start: WaveSpacing.x16, // FIXED
+        end: WaveSpacing.x8, // FIXED
+        top: WaveSpacing.x8, // FIXED
+        bottom: MediaQuery.viewInsetsOf(context).bottom + WaveSpacing.x8, // FIXED
       ),
       decoration: BoxDecoration(
         color: c.surface,
@@ -333,27 +304,19 @@ class _Composer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
+              child: WaveTextField( // FIXED: TextField -> WaveTextField
                 controller: controller,
                 maxLines: 4,
-                minLines: 1,
-                maxLength: 500,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: context.l10n.addAComment,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
-                  counterText: '',
-                ),
-                onSubmitted: (_) => onSend(),
+                hint: context.l10n.addAComment,
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton.filled(
+            const SizedBox(width: WaveSpacing.x8), // FIXED
+            WaveButton( // FIXED: IconButton.filled -> WaveButton icon variant
+              variant: WaveButtonVariant.icon,
+              size: WaveButtonSize.sm,
+              icon: Icons.send,
+              label: context.l10n.postComment,
               onPressed: enabled ? onSend : null,
-              icon: const Icon(Icons.send, size: 18),
-              tooltip: context.l10n.postComment,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
           ],
         ),

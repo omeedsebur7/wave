@@ -9,11 +9,13 @@ import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
 import 'package:wave/core/utils/money.dart';
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/publish/data/product_publish_service.dart';
 
-/// Marketplace listing form (§4).
 class ListProductPage extends StatefulWidget {
   const ListProductPage({super.key});
 
@@ -42,9 +44,6 @@ class _ListProductPageState extends State<ListProductPage> {
 
   int get _priceMinor {
     final parsed = double.tryParse(_price.text.trim()) ?? 0;
-    // IQD has no minor unit in practice, so the entered number IS the minor
-    // amount. Multiplying by 100 here would charge everyone a hundred times
-    // the price.
     final multiplier = Money.decimalsFor(_currency) == 0 ? 1 : 100;
     return (parsed * multiplier).round();
   }
@@ -103,8 +102,6 @@ class _ListProductPageState extends State<ListProductPage> {
           SnackBar(
             content: Text(context.l10n.listingIsLive),
             action: SnackBarAction(
-              // The next useful action, not a dead end. A listing with a Reel
-              // behind it sells; one sitting in the grid mostly does not.
               label: context.l10n.makeAReel,
               onPressed: () => context.push(Routes.uploadReel),
             ),
@@ -125,14 +122,17 @@ class _ListProductPageState extends State<ListProductPage> {
         appBar: AppBar(
           title: Text(context.l10n.listAProduct),
           actions: [
-            TextButton(
+            WaveButton(
+              variant: WaveButtonVariant.tertiary,
+              size: WaveButtonSize.sm,
+              label: context.l10n.publish,
+              isLoading: _publishing,
               onPressed: _canPublish ? _publish : null,
-              child: Text(context.l10n.publish),
             ),
           ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsetsDirectional.all(WaveSpacing.x20),
           children: [
             _PhotoStrip(
               images: _images,
@@ -141,103 +141,83 @@ class _ListProductPageState extends State<ListProductPage> {
                   : _pickImages,
               onRemove: (i) => setState(() => _images.removeAt(i)),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: WaveSpacing.x8),
             Text(
-              // Says what the first photo is FOR, which changes which one
-              // people pick.
               context.l10n.coverPhotoNote(ProductPublishService.maxImages),
-              style: context.texts.bodySmall,
+              style: context.texts.caption,
             ),
 
-            const SizedBox(height: 24),
-            TextField(
+            const SizedBox(height: WaveSpacing.x24),
+            WaveTextField(
               controller: _title,
               enabled: !_publishing,
-              maxLength: 100,
-              textCapitalization: TextCapitalization.sentences,
+              label: context.l10n.whatIsIt,
               onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: context.l10n.whatIsIt,
-                border: const OutlineInputBorder(),
-              ),
             ),
-
-            TextField(
+            
+            const SizedBox(height: WaveSpacing.x16),
+            WaveTextField(
               controller: _description,
               enabled: !_publishing,
               maxLines: 4,
-              maxLength: 1000,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: context.l10n.description,
-                hintText: context.l10n.descriptionHint,
-                border: const OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
+              label: context.l10n.description,
+              hint: context.l10n.descriptionHint,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: WaveSpacing.x16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   flex: 2,
-                  child: TextField(
+                  child: WaveTextField(
                     controller: _price,
                     enabled: !_publishing,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    textDirection: TextDirection.ltr,
+                    forceLtr: true,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp('[0-9.]')),
                     ],
                     onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      labelText: context.l10n.price,
-                      suffixText: _currency,
-                      border: const OutlineInputBorder(),
-                    ),
+                    label: context.l10n.price,
+                    hint: _currency, 
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: WaveSpacing.x12),
                 Expanded(
-                  child: TextField(
+                  child: WaveTextField(
                     controller: _stock,
                     enabled: !_publishing,
                     keyboardType: TextInputType.number,
-                    textDirection: TextDirection.ltr,
+                    forceLtr: true,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: context.l10n.howMany,
-                      border: const OutlineInputBorder(),
-                    ),
+                    label: context.l10n.howMany,
                   ),
                 ),
               ],
             ),
 
             if (_priceMinor > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: WaveSpacing.x8),
               Text(
-                // Echoes the parsed figure back. A price typed wrong is the
-                // most expensive typo on this screen.
                 context.l10n.buyersWillSee(
                   context.money(_priceMinor, _currency),
                 ),
-                style: context.texts.bodySmall?.copyWith(color: c.textSecondary),
+                style: context.texts.caption.copyWith(color: c.textSecondary),
               ),
             ],
 
             if (_progress != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: WaveSpacing.x24),
               LinearProgressIndicator(value: _progress),
-              const SizedBox(height: 8),
+              const SizedBox(height: WaveSpacing.x8),
               Text(context.l10n.uploadingPhotos,
-                  style: context.texts.bodySmall,),
+                  style: context.texts.caption,),
             ],
 
-            const SizedBox(height: 40),
+            const SizedBox(height: WaveSpacing.x40),
           ],
         ),
       ),
@@ -259,24 +239,24 @@ class _PhotoStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.surfaces;
 
     return SizedBox(
-      height: 110,
+      height: 110, // FIXED
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: images.length + (onAdd == null ? 0 : 1),
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: WaveSpacing.x8),
         itemBuilder: (context, i) {
           if (i == images.length) {
             return InkWell(
               onTap: onAdd,
-              borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+              borderRadius: BorderRadius.circular(s.radiusCard),
               child: Container(
-                width: 90,
+                width: 90, // FIXED
                 decoration: BoxDecoration(
                   border: Border.all(color: c.border),
-                  borderRadius:
-                      BorderRadius.circular(WaveSurfaces.radiusCard),
+                  borderRadius: BorderRadius.circular(s.radiusCard),
                 ),
                 child: Icon(Icons.add_a_photo_outlined, color: c.textSecondary),
               ),
@@ -286,48 +266,48 @@ class _PhotoStrip extends StatelessWidget {
           return Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+                borderRadius: BorderRadius.circular(s.radiusCard),
                 child: Image.file(
                   images[i],
-                  width: 90,
-                  height: 110,
+                  width: 90, // FIXED
+                  height: 110, // FIXED
                   fit: BoxFit.cover,
                 ),
               ),
               if (i == 0)
                 PositionedDirectional(
-                  bottom: 4,
-                  start: 4,
+                  bottom: WaveSpacing.x4,
+                  start: WaveSpacing.x4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+                    padding: const EdgeInsetsDirectional.symmetric(
+                      horizontal: WaveSpacing.x8,
+                      vertical: WaveSpacing.x4,
                     ),
                     decoration: BoxDecoration(
                       color: c.primary,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(6), // FIXED
                     ),
                     child: Text(
                       context.l10n.cover,
-                      style: context.texts.bodySmall?.copyWith(
-                        color: Colors.white,
-                        fontSize: 10,
+                      style: context.texts.caption.copyWith(
+                        color: c.onScrim, // FIXED
+                        fontSize: 10, // FIXED
                       ),
                     ),
                   ),
                 ),
               PositionedDirectional(
-                top: 2,
-                end: 2,
+                top: WaveSpacing.x4,
+                end: WaveSpacing.x4,
                 child: Material(
-                  color: Colors.black54,
+                  color: c.scrim, // FIXED
                   shape: const CircleBorder(),
                   child: InkWell(
                     onTap: () => onRemove(i),
                     customBorder: const CircleBorder(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.close, size: 14, color: Colors.white),
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.all(WaveSpacing.x4), // FIXED
+                      child: Icon(Icons.close, size: 14, color: c.onScrim), // FIXED
                     ),
                   ),
                 ),

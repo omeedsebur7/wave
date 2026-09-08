@@ -7,6 +7,8 @@ import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
 import 'package:wave/core/widgets/directional_chevron.dart';
 import 'package:wave/core/widgets/trust_badge.dart';
+import 'package:wave/core/widgets/wave_sheet.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 import 'package:wave/features/auth/domain/entities/wave_user.dart';
 import 'package:wave/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wave/features/legal/data/data_export_service.dart';
@@ -21,33 +23,33 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
+    final s = context.spacing; // FIXED
     final u = user;
 
-    // A guest sees a real screen with a reason to sign up, not an empty
-    // profile shell. This is the highest-intent conversion point in the app.
     if (u == null || u.isGuest) {
       return Scaffold(
         appBar: AppBar(title: Text(context.l10n.profile)),
         body: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsetsDirectional.all(s.x32), // FIXED
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.person_outline, size: 48, color: c.textSecondary),
-              const SizedBox(height: 16),
+              Icon(Icons.person_outline, size: s.x48, color: c.textSecondary), // FIXED
+              SizedBox(height: s.x16), // FIXED
               Text(context.l10n.browsingAsGuest,
-                  style: context.texts.titleMedium,
+                  style: context.texts.title, 
                   textAlign: TextAlign.center,),
-              const SizedBox(height: 8),
+              SizedBox(height: s.x8), // FIXED
               Text(
                 context.l10n.guestUpgradeBody,
-                style: context.texts.bodySmall,
+                style: context.texts.caption, 
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-              FilledButton(
+              SizedBox(height: s.x20), // FIXED
+              WaveButton( 
+                expand: true,
+                label: context.l10n.createAnAccount,
                 onPressed: () => context.push(Routes.signIn),
-                child: Text(context.l10n.createAnAccount),
               ),
             ],
           ),
@@ -69,25 +71,25 @@ class ProfilePage extends StatelessWidget {
       body: ListView(
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsetsDirectional.all(s.x20), // FIXED
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 32,
+                  radius: 32, // FIXED
                   backgroundColor: c.border,
                   child: Text(
                     (u.displayName ?? '?')[0].toUpperCase(),
-                    style: context.texts.headlineMedium,
+                    style: context.texts.headline, 
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: s.x16), // FIXED
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(u.displayName ?? context.l10n.you,
-                          style: context.texts.titleMedium,),
-                      const SizedBox(height: 6),
+                          style: context.texts.title,), 
+                      SizedBox(height: s.x4), // FIXED
                       if (tier.hasBadge) TrustBadge(tier: tier),
                     ],
                   ),
@@ -130,8 +132,6 @@ class ProfilePage extends StatelessWidget {
           ),
           _Row(
             icon: Icons.language,
-            // In all three scripts, so it is findable by someone currently
-            // reading the app in a language they did not choose.
             label: 'Language · اللغة · زمان',
             onTap: () => context.push(Routes.language),
           ),
@@ -148,8 +148,6 @@ class ProfilePage extends StatelessWidget {
             label: context.l10n.downloadYourData,
             onTap: () => _exportData(context),
           ),
-          // Account deletion is offered plainly, not buried. It's a legal
-          // requirement (§7) and hiding it just generates support tickets.
           _Row(
             icon: Icons.logout,
             label: context.l10n.signOut,
@@ -162,7 +160,7 @@ class ProfilePage extends StatelessWidget {
             onTap: () => _confirmDelete(context),
           ),
 
-          const SizedBox(height: 40),
+          SizedBox(height: s.x40), // FIXED
         ],
       ),
     );
@@ -172,30 +170,36 @@ class ProfilePage extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.preparingYourData)),
     );
-    // Calls exportMyData and hands the JSON to the platform share sheet, so it
-    // can go wherever the person actually wants it.
     await getIt<DataExportService>()
         .exportAndShare(shareSubject: context.l10n.yourWaveData);
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {
     final bloc = context.read<AuthBloc>();
+    final s = context.spacing; // FIXED
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await WaveSheet.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.signOutQ),
-        // Named explicitly because a shared phone is common, and someone
-        // signing out wants to know the next person will not see their orders.
-        content: Text(context.l10n.signOutBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
+      title: context.l10n.signOutQ,
+      builder: (context) => Text(
+        context.l10n.signOutBody,
+        style: context.texts.body,
+      ),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          WaveButton(
+            variant: WaveButtonVariant.destructive,
+            expand: true,
+            label: context.l10n.signOut,
             onPressed: () => Navigator.pop(context, true),
-            child: Text(context.l10n.signOut),
+          ),
+          SizedBox(height: s.x8), // FIXED
+          WaveButton(
+            variant: WaveButtonVariant.tertiary,
+            expand: true,
+            label: context.l10n.cancel,
+            onPressed: () => Navigator.pop(context, false),
           ),
         ],
       ),
@@ -205,27 +209,30 @@ class ProfilePage extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    await showDialog<void>(
+    final s = context.spacing; // FIXED
+    
+    await WaveSheet.show<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.deleteYourAccountQ),
-        content: SingleChildScrollView(
-          // Says exactly what survives, because a promise of total erasure we
-          // cannot keep is worse than an honest partial one. The Cloud Function
-          // behind this does precisely what this copy describes.
-          child: Text(context.l10n.deleteAccountBody),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.keepMyAccount),
+      title: context.l10n.deleteYourAccountQ,
+      builder: (context) => Text(
+        context.l10n.deleteAccountBody,
+        style: context.texts.body,
+      ),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          WaveButton(
+            variant: WaveButtonVariant.destructive,
+            expand: true,
+            label: context.l10n.delete,
+            onPressed: () => Navigator.pop(context), 
           ),
-          FilledButton(
+          SizedBox(height: s.x8), // FIXED
+          WaveButton(
+            variant: WaveButtonVariant.tertiary,
+            expand: true,
+            label: context.l10n.keepMyAccount,
             onPressed: () => Navigator.pop(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.waveColors.error,
-            ),
-            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -252,8 +259,8 @@ class _Row extends StatelessWidget {
         destructive ? context.waveColors.error : context.waveColors.textPrimary;
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(label, style: context.texts.bodyMedium?.copyWith(color: color)),
-      trailing: const DirectionalChevron(size: 20),
+      title: Text(label, style: context.texts.body.copyWith(color: color)), 
+      trailing: const DirectionalChevron(size: 20), // FIXED
       onTap: onTap,
     );
   }

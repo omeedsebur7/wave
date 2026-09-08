@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:wave/app/di/injector.dart';
 import 'package:wave/core/analytics/analytics_events.dart';
@@ -18,7 +18,7 @@ import 'package:wave/features/auth/domain/entities/wave_user.dart';
 import 'package:wave/features/auth/domain/repositories/auth_repository.dart';
 import 'package:wave/features/location/data/saved_location_store.dart';
 
-@LazySingleton(as: AuthRepository)
+
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(
     this._auth,

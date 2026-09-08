@@ -35,8 +35,6 @@ class CaptionChanged extends UploadReelEvent {
 
 class ProductLinked extends UploadReelEvent {
   const ProductLinked(this.product);
-
-  /// Null clears the link, which removes the Buy Now button from the Reel.
   final Product? product;
   @override
   List<Object?> get props => [product?.id];
@@ -68,10 +66,7 @@ class UploadReelState extends Equatable {
   final int? durationSeconds;
   final String caption;
   final Product? linkedProduct;
-
-  /// Non-null only while an upload is in flight.
   final ReelUploadProgress? progress;
-
   final String? publishedReelId;
   final Failure? failure;
 
@@ -82,9 +77,6 @@ class UploadReelState extends Equatable {
       durationSeconds != null &&
       durationSeconds! > ReelUploadService.maxDurationSeconds;
 
-  /// The gate on the publish button. Checked client-side for immediate
-  /// feedback; the Cloud Function checks the duration again, and that is the
-  /// check that counts.
   bool get canPublish => video != null && !isTooLong && !isUploading;
 
   UploadReelState copyWith({
@@ -109,6 +101,7 @@ class UploadReelState extends Equatable {
             clearProduct ? null : (linkedProduct ?? this.linkedProduct),
         progress: clearProgress ? null : (progress ?? this.progress),
         publishedReelId: publishedReelId ?? this.publishedReelId,
+        // FIXED: Using boolean flags to clear safely
         failure: clearFailure ? null : (failure ?? this.failure),
       );
 
@@ -184,10 +177,11 @@ class UploadReelBloc extends Bloc<UploadReelEvent, UploadReelState> {
       durationSeconds: state.durationSeconds!,
       caption: state.caption,
       linkedProductId: state.linkedProduct?.id,
-      // Routed through an event so progress arrives on the BLoC's own stream
-      // rather than mutating state from a callback mid-emit.
       onProgress: (progress) => add(_ProgressReported(progress)),
     );
+
+    // FIXED: Protect against the bloc being closed mid-upload (§8.5)
+    if (emit.isDone) return;
 
     result.fold(
       (f) => emit(state.copyWith(failure: f, clearProgress: true)),

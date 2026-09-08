@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wave/core/widgets/wave_error_view.dart';
+import 'package:wave/design_system/components/wave_button.dart';
 
 import '../helpers/pump_app.dart';
 
@@ -11,7 +11,7 @@ void main() {
       await tester.pumpWave(
         const WaveErrorView(title: 'Gone wrong', message: 'Try later'),
       );
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(WaveButton), findsNothing);
 
       await tester.pumpWave(
         WaveErrorView(
@@ -20,7 +20,7 @@ void main() {
           onRetry: () {},
         ),
       );
-      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byType(WaveButton), findsOneWidget);
     });
 
     testWidgets('the retry callback fires', (tester) async {
@@ -32,7 +32,7 @@ void main() {
           onRetry: () => tapped = true,
         ),
       );
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(WaveButton));
       expect(tapped, isTrue);
     });
 

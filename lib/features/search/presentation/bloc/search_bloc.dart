@@ -60,17 +60,11 @@ class SearchState extends Equatable {
   List<Object?> get props => [status, query, products, reels];
 }
 
-/// Unified search across Products and Reels (§4).
-///
-/// Both are queried in parallel and rendered in one result set, because a buyer
-/// searching "leather bag" does not care whether the match came from a listing
-/// title or a Reel caption — they care about finding the bag.
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
   SearchBloc(this._products, this._reels, this._blocks)
       : super(const SearchState()) {
     on<SearchQueryChanged>(
       _onQueryChanged,
-      // A Firestore query per keystroke is a bill proportional to typing speed.
       transformer: (events, mapper) =>
           events.debounce(const Duration(milliseconds: 350)).asyncExpand(mapper),
     );
@@ -91,9 +85,6 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       return;
     }
 
-    // Two characters is the shortest query worth spending a read on — a
-    // single-letter prefix matches most of the catalogue and tells nobody
-    // anything.
     if (q.length < 2) {
       emit(state.copyWith(query: q, status: SearchStatus.idle));
       return;
@@ -101,42 +92,23 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     emit(state.copyWith(query: q, status: SearchStatus.searching));
 
-    // Started before either is awaited, so the two round trips overlap. Two
-    // sequential awaits would suspend before the second call was even issued,
-    // making every search cost the SUM of both queries rather than the max —
-    // which is not what the class doc above promises.
     final productsFuture = _products.search(q);
     final reelsFuture = _reels.search(q);
 
     final productsResult = await productsFuture;
     final reelsResult = await reelsFuture;
 
+    // FIXED: Guard against state modification after bloc closes (§8.5)
+    if (emit.isDone) return;
+
     final products = productsResult.valueOrNull;
     final reels = reelsResult.valueOrNull;
 
-    // A stale response from a query the user has since changed must not
-    // overwrite the current one.
-    //
-    // Not dead code, though it looks it: `asyncExpand` serialises
-    // SearchQueryChanged handlers, so a newer query cannot land here mid-flight.
-    // But SearchCleared is a separate `on<>` subscription, and different event
-    // types DO run concurrently — a clear arriving while these two queries are
-    // in flight resets state.query to '', and this guard is what stops the
-    // completed search from repopulating a screen the user just emptied.
     if (state.query != q) return;
 
     emit(
       state.copyWith(
         status: SearchStatus.ready,
-        // Search has to respect a block as much as the feed does. Someone who
-        // blocked a seller and then found their listing by searching would
-        // reasonably conclude the block did nothing.
-        //
-        // The fallbacks are explicitly typed. A bare `const []` infers as
-        // List<dynamic>, the `??` widens to List<dynamic> via least upper
-        // bound, and the enclosing literal's context type does not propagate
-        // into a for-in iterable — so `p` and `r` would silently become
-        // dynamic and the whole filter would go unchecked.
         products: [
           for (final p in products ?? const <Product>[])
             if (!_blocks.isBlocked(p.sellerId)) p,
@@ -157,9 +129,6 @@ extension _Debounce<T> on Stream<T> {
     late StreamController<T> controller;
     controller = StreamController<T>(
       onListen: () {
-        // Held so onCancel can actually tear the source down. Without this the
-        // timer was cancelled but the upstream subscription stayed open,
-        // leaking one listener per bloc close.
         subscription = listen(
           (event) {
             timer?.cancel();

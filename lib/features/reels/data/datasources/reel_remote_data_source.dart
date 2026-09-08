@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:injectable/injectable.dart';
+
 import 'package:wave/core/services/sharded_counter_service.dart';
 import 'package:wave/features/reels/data/models/reel_dto.dart';
 
-@lazySingleton
+
 class ReelRemoteDataSource {
   ReelRemoteDataSource(this._db, this._counters);
 

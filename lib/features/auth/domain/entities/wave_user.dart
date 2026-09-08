@@ -19,8 +19,7 @@ class WaveUser extends Equatable {
   /// Anonymous session. Can browse; cannot order, publish, or comment.
   final bool isGuest;
 
-  /// Set by the verification Cloud Function, never by the client. This is the
-  /// flag the checkout gate reads (§5.2).
+  /// Set by the verification Cloud Function, never by the client.
   final bool phoneVerified;
   final bool isSuspended;
 
@@ -29,14 +28,24 @@ class WaveUser extends Equatable {
   final String? phoneNumber;
   final String? photoUrl;
 
-  /// Versioned so a material change to Terms can trigger re-acceptance (§7).
   final String? acceptedTermsVersion;
-
   final bool ageConfirmed;
 
   bool get canCheckout => !isGuest && phoneVerified;
   bool get canComment => !isGuest;
 
+  // FIXED: Added all missing properties so state comparisons are accurate!
   @override
-  List<Object?> get props => [isSuspended, uid, isGuest, phoneVerified, acceptedTermsVersion];
+  List<Object?> get props => [
+        uid,
+        isGuest,
+        phoneVerified,
+        isSuspended,
+        displayName,
+        email,
+        phoneNumber,
+        photoUrl,
+        acceptedTermsVersion,
+        ageConfirmed,
+      ];
 }

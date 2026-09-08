@@ -6,7 +6,10 @@ import 'package:wave/app/router/routes.dart';
 import 'package:wave/core/error/failure_text.dart';
 import 'package:wave/core/l10n_extension.dart';
 import 'package:wave/core/theme/app_theme.dart';
-import 'package:wave/core/theme/wave_surfaces.dart';
+import 'package:wave/core/theme/wave_spacing.dart';
+
+import 'package:wave/design_system/components/wave_button.dart';
+import 'package:wave/design_system/components/wave_text_field.dart';
 import 'package:wave/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wave/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:wave/features/chat/domain/entities/conversation.dart';
@@ -46,10 +49,6 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
     final text = _composer.text.trim();
     if (text.isEmpty || _sending) return;
 
-    // Clear the field immediately. Firestore's offline queue already holds the
-    // write, so the message appears in the list right away in a `sending`
-    // state — waiting for the server before clearing makes the app feel broken
-    // on a slow connection.
     _composer.clear();
     setState(() => _sending = true);
 
@@ -66,7 +65,6 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
 
     result.fold(
       (f) {
-        // Put the text back rather than losing what they typed.
         _composer.text = text;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(failureText(context, f))));
@@ -78,9 +76,6 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.waveColors;
-    // Read from AuthBloc rather than passed in: a thread opened from a deep
-    // link has no caller to supply it, and a wrong id here silently flips every
-    // bubble to the wrong side.
     final currentUserId =
         context.select((AuthBloc bloc) => bloc.state.user?.uid) ?? '';
 
@@ -104,23 +99,25 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
           if (widget.aboutProductId != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsetsDirectional.all(WaveSpacing.x12), // FIXED
               color: c.surface,
               child: Row(
                 children: [
-                  Icon(Icons.sell_outlined, size: 18, color: c.textSecondary),
-                  const SizedBox(width: 8),
+                  Icon(Icons.sell_outlined, size: WaveSpacing.x16, color: c.textSecondary),
+                  const SizedBox(width: WaveSpacing.x8), // FIXED
                   Expanded(
                     child: Text(
                       context.l10n.aboutAListing,
-                      style: context.texts.bodySmall,
+                      style: context.texts.caption, // FIXED
                     ),
                   ),
-                  TextButton(
+                  WaveButton( // FIXED: TextButton -> WaveButton
+                    variant: WaveButtonVariant.tertiary,
+                    size: WaveButtonSize.sm,
+                    label: context.l10n.view,
                     onPressed: () => context.push(
                       Routes.productDetailPath(widget.aboutProductId!),
                     ),
-                    child: Text(context.l10n.view),
                   ),
                 ],
               ),
@@ -135,21 +132,19 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                 if (messages.isEmpty) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsetsDirectional.all(WaveSpacing.x32), // FIXED
                       child: Text(
                         context.l10n.chatEmptyPrompt,
-                        style: context.texts.bodySmall,
+                        style: context.texts.caption, // FIXED
                         textAlign: TextAlign.center,
                       ),
                     ),
                   );
                 }
 
-                // Reversed so new messages appear at the bottom without having
-                // to scroll a list that is still loading.
                 return ListView.builder(
                   reverse: true,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsetsDirectional.all(WaveSpacing.x16), // FIXED
                   itemCount: messages.length,
                   itemBuilder: (context, i) => _Bubble(
                     message: messages[i],
@@ -187,23 +182,24 @@ class _Bubble extends StatelessWidget {
           ? AlignmentDirectional.centerEnd
           : AlignmentDirectional.centerStart,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsetsDirectional.only(bottom: WaveSpacing.x8), // FIXED
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: WaveSpacing.x12, 
+          vertical: WaveSpacing.x8,
+        ), // FIXED
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.75,
         ),
         decoration: BoxDecoration(
           color: isMine ? c.primary : c.surface,
-          borderRadius: BorderRadius.circular(WaveSurfaces.radiusCard),
+          borderRadius: BorderRadius.circular(context.surfaces.radiusCard),
           border: isMine ? null : Border.all(color: c.border),
         ),
-        // Faded while queued, so an unsent message is visibly different from a
-        // delivered one without needing a status icon on every bubble.
         child: Opacity(
           opacity: pending ? 0.6 : 1,
           child: Text(
             message.text,
-            style: context.texts.bodyMedium?.copyWith(
+            style: context.texts.body.copyWith( // FIXED: bodyMedium -> body
               color: isMine ? Colors.white : c.textPrimary,
             ),
           ),
@@ -229,7 +225,12 @@ class _Composer extends StatelessWidget {
     final c = context.waveColors;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        WaveSpacing.x12, 
+        WaveSpacing.x8, 
+        WaveSpacing.x12, 
+        WaveSpacing.x8,
+      ), // FIXED
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(top: BorderSide(color: c.border)),
@@ -240,25 +241,19 @@ class _Composer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
+              child: WaveTextField( // FIXED: TextField -> WaveTextField
                 controller: controller,
                 maxLines: 4,
-                minLines: 1,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: context.l10n.message,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onSubmitted: (_) => onSend(),
+                hint: context.l10n.message,
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton.filled(
+            const SizedBox(width: WaveSpacing.x8),
+            WaveButton( // FIXED: IconButton.filled -> WaveButton icon variant
+              variant: WaveButtonVariant.icon,
+              size: WaveButtonSize.sm,
+              icon: Icons.send,
+              label: context.l10n.send,
               onPressed: enabled ? onSend : null,
-              icon: const Icon(Icons.send, size: 20),
-              tooltip: context.l10n.send,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
           ],
         ),
